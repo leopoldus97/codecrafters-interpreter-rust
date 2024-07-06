@@ -1,16 +1,12 @@
-1234.1234123
-123.456
-.456
-123.
-5+3
+andy formless fo _ _123 _abc ab123
+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_
 
-// expect: NUMBER 123 123.0
-// expect: NUMBER 123.456 123.456
-// expect: DOT . null
-// expect: NUMBER 456 456.0
-// expect: NUMBER 123 123.0
-// expect: DOT . null
-// expect: NUMBER 5 5.0
-// expect: PLUS + null
-// expect: NUMBER 3 3.0
+// expect: IDENTIFIER andy null
+// expect: IDENTIFIER formless null
+// expect: IDENTIFIER fo null
+// expect: IDENTIFIER _ null
+// expect: IDENTIFIER _123 null
+// expect: IDENTIFIER _abc null
+// expect: IDENTIFIER ab123 null
+// expect: IDENTIFIER abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_ null
 // expect: EOF  null

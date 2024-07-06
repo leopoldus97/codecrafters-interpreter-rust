@@ -275,7 +275,11 @@ fn get_number(line: &str) -> Option<Token> {
         let token = token.as_str();
 
         let literal = if token.contains('.') {
-            token.to_string()
+            let mut split = token.split('.');
+            let whole = split.next().unwrap();
+            let fraction = split.last().unwrap();
+            let fraction: u32 = fraction.parse().unwrap();
+            format!("{}.{}", whole, fraction)
         } else {
             format!("{}.0", token)
         };
