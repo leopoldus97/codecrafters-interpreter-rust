@@ -24,23 +24,8 @@ fn main() {
             });
 
             if !file_contents.is_empty() {
-                for mut line in file_contents.lines() {
-                    // for token in line.split_whitespace() {
-                    //     if let Some(keyword) = get_keyword(token) {
-                    //         println!("{}", keyword);
-                    //     } else if let Some(puncuation) = get_punctuation(token) {
-                    //         println!("{}", puncuation);
-                    //     } else if let Some(string) = get_string(token) {
-                    //         println!("{}", string);
-                    //     } else if let Some(number) = get_number(token) {
-                    //         println!("{}", number);
-                    //     } else if let Some(identifier) = get_identifier(token) {
-                    //         println!("{}", identifier);
-                    //     } else {
-                    //         println!("ERROR {}", token);
-                    //     }
-                    // }
-                    while let Some(token) = eat_string(&mut line) {
+                for (line_number, mut line) in file_contents.lines().enumerate() {
+                    while let Some(token) = eat_string(&mut line, line_number + 1) {
                         println!("{}", token);
                     }
                 }
@@ -68,6 +53,7 @@ enum TokenType {
     Number,
     Identifier,
     Eof,
+    Error(usize),
 }
 
 impl Display for TokenType {
@@ -79,6 +65,7 @@ impl Display for TokenType {
             TokenType::Number => write!(f, "NUMBER"),
             TokenType::Identifier => write!(f, "IDENTIFIER"),
             TokenType::Eof => write!(f, "EOF"),
+            TokenType::Error(ln) => write!(f, "[line {}] Error: Unexpected character:", ln),
         }
     }
 }
@@ -99,7 +86,7 @@ impl Display for Token {
     }
 }
 
-fn eat_string(line: &mut &str) -> Option<Token> {
+fn eat_string(line: &mut &str, line_number: usize) -> Option<Token> {
     let stripped_line = line.trim_start();
 
     let token: Option<Token> = if let Some(token) = get_keyword(stripped_line) {
@@ -111,6 +98,8 @@ fn eat_string(line: &mut &str) -> Option<Token> {
     } else if let Some(token) = get_number(stripped_line) {
         Some(token)
     } else if let Some(token) = get_identifier(stripped_line) {
+        Some(token)
+    } else if let Some(token) = get_error(stripped_line, line_number) {
         Some(token)
     } else {
         None
@@ -235,6 +224,21 @@ fn get_identifier(line: &str) -> Option<Token> {
             token_type: TokenType::Identifier,
             lexeme: token.to_string(),
             literal: None,
+        })
+    } else {
+        None
+    }
+}
+
+fn get_error(line: &str, line_number: usize) -> Option<Token> {
+    let re = Regex::new(r#"^[^(){};,\+\-\*!=<>/\."a-zA-Z0-9]"#).unwrap();
+    if let Some(token) = re.find(line) {
+        let token = token.as_str();
+
+        Some(Token {
+            token_type: TokenType::Error(line_number),
+            lexeme: token.to_string(),
+            literal: Some("".to_string()),
         })
     } else {
         None
