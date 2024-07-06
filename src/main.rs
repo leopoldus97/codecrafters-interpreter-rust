@@ -208,6 +208,7 @@ fn get_keyword(line: &str) -> Option<Token> {
         ("true", "TRUE"),
         ("var", "VAR"),
         ("while", "WHILE"),
+        ("print", "PRINT"),
     ]);
     keywords.get(token).map(|keyword| Token {
         token_type: TokenType::Keyword(keyword.to_string()),

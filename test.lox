@@ -1,12 +1,19 @@
-andy formless fo _ _123 _abc ab123
-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_
+and class else false for fun if nil or return super this true var while print
 
-// expect: IDENTIFIER andy null
-// expect: IDENTIFIER formless null
-// expect: IDENTIFIER fo null
-// expect: IDENTIFIER _ null
-// expect: IDENTIFIER _123 null
-// expect: IDENTIFIER _abc null
-// expect: IDENTIFIER ab123 null
-// expect: IDENTIFIER abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_ null
+// expect: AND and null
+// expect: CLASS class null
+// expect: ELSE else null
+// expect: FALSE false null
+// expect: FOR for null
+// expect: FUN fun null
+// expect: IF if null
+// expect: NIL nil null
+// expect: OR or null
+// expect: RETURN return null
+// expect: SUPER super null
+// expect: THIS this null
+// expect: TRUE true null
+// expect: VAR var null
+// expect: WHILE while null
+// expect: PRINT print null
 // expect: EOF  null
