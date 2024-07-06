@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use std::{env, process};
 use std::fmt::Display;
 use std::fs;
 use std::io::{self, Write};
+use std::{env, process};
 
 use regex::Regex;
 
@@ -25,16 +25,14 @@ fn main() {
             });
 
             if !file_contents.is_empty() {
-                for (line_number, mut line) in file_contents.lines().enumerate() {
-                    while let Some(result) = eat_string(&mut line, line_number + 1) {
-                        match result {
-                            Ok(token) => println!("{}", token),
-                            Err(e) => {
-                                writeln!(io::stderr(), "{}", e).unwrap();
-                                exit_code = e.get_exit_code();
-                            },                      
-                        }
+                for (line_number, line) in file_contents.lines().enumerate() {
+                    let (tokens, code) = eat_string(&line, line_number + 1);
+                
+                    for token in tokens {
+                        println!("{}", token);
                     }
+
+                    exit_code = code;
                 }
             }
 
@@ -51,6 +49,7 @@ fn main() {
             return;
         }
     }
+
     process::exit(exit_code);
 }
 
@@ -121,37 +120,46 @@ impl Display for Token {
     }
 }
 
-fn eat_string(line: &mut &str, line_number: usize) -> Option<Result<Token, TokenizerError>> {
-    let stripped_line = line.trim_start();
+fn eat_string(line: &str, line_number: usize) -> (Vec<Token>, i32) {
+    let mut tokens = Vec::new();
+    let mut line = line;
+    let mut exit_code = 0;
 
-    if stripped_line.is_empty() {
-        return None;
+    while !line.is_empty() {
+        let stripped_line = line.trim_start();
+
+        if stripped_line.is_empty() {
+            break;
+        }
+
+        let token: Option<Token> = if let Some(token) = get_keyword(stripped_line) {
+            Some(token)
+        } else if let Some(token) = get_punctuation(stripped_line) {
+            Some(token)
+        } else if let Some(token) = get_string(stripped_line) {
+            Some(token)
+        } else if let Some(token) = get_number(stripped_line) {
+            Some(token)
+        } else if let Some(token) = get_identifier(stripped_line) {
+            Some(token)
+        } else {
+            let err = TokenizerError::UnexpectedCharacterError(
+                line_number,
+                stripped_line.chars().next().unwrap(),
+            );
+            writeln!(io::stderr(), "{}", err).unwrap();
+            line = &stripped_line[1..];
+            exit_code = err.get_exit_code();
+            None
+        };
+
+        if let Some(t) = token {
+            line = &stripped_line[t.lexeme.len()..];
+            tokens.push(t);
+        }
     }
-
-    let token: Option<Token> = if let Some(token) = get_keyword(stripped_line) {
-        Some(token)
-    } else if let Some(token) = get_punctuation(stripped_line) {
-        Some(token)
-    } else if let Some(token) = get_string(stripped_line) {
-        Some(token)
-    } else if let Some(token) = get_number(stripped_line) {
-        Some(token)
-    } else if let Some(token) = get_identifier(stripped_line) {
-        Some(token)
-    } else {
-        None
-    };
-
-    if let Some(token) = token {
-        *line = &stripped_line[token.lexeme.len()..];
-        Some(Ok(token))
-    } else {
-        *line = &stripped_line[1..];
-        Some(Err(TokenizerError::UnexpectedCharacterError(
-            line_number,
-            stripped_line.chars().next().unwrap(),
-        )))
-    }
+    
+    (tokens, exit_code)
 }
 
 fn get_keyword(line: &str) -> Option<Token> {
@@ -189,7 +197,7 @@ fn get_keyword(line: &str) -> Option<Token> {
 }
 
 fn get_punctuation(line: &str) -> Option<Token> {
-    let re = Regex::new(r"^[(){};,\+\-\*!=<>/\.]").unwrap();
+    let re = Regex::new(r"^(==|[(){};,\+\-\*!=<>/\.])").unwrap();
 
     if !re.is_match(line) {
         return None;
@@ -270,17 +278,3 @@ fn get_identifier(line: &str) -> Option<Token> {
         None
     }
 }
-
-// fn get_unknown_character(line: &str, line_number: usize) -> Result<(), TokenizerError> {
-//     let re = Regex::new(r#"^[^(){};,\+\-\*!=<>/\."a-zA-Z0-9]"#).unwrap();
-//     if let Some(token) = re.find(line) {
-//         let token = token.as_str();
-
-//         Err(TokenizerError::UnexpectedCharacterError(
-//             line_number,
-//             token.chars().next().unwrap(),
-//         ))
-//     } else {
-//         Ok(())
-//     }
-// }
