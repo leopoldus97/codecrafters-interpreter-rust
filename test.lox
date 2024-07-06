@@ -1,2 +1,16 @@
-"foo baz"
-"bar
+1234.1234123
+123.456
+.456
+123.
+5+3
+
+// expect: NUMBER 123 123.0
+// expect: NUMBER 123.456 123.456
+// expect: DOT . null
+// expect: NUMBER 456 456.0
+// expect: NUMBER 123 123.0
+// expect: DOT . null
+// expect: NUMBER 5 5.0
+// expect: PLUS + null
+// expect: NUMBER 3 3.0
+// expect: EOF  null

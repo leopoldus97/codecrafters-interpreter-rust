@@ -268,14 +268,20 @@ fn get_string(line: &str) -> Option<Token> {
 }
 
 fn get_number(line: &str) -> Option<Token> {
-    let re = Regex::new(r"^[0-9\.]+").unwrap();
+    let re = Regex::new(r"^[0-9]+(\.[0-9]+)?").unwrap();
     if let Some(token) = re.find(line) {
         let token = token.as_str();
+
+        let literal = if token.contains('.') {
+            token.to_string()
+        } else {
+            format!("{}.0", token)
+        };
 
         Some(Token {
             token_type: TokenType::Number,
             lexeme: token.to_string(),
-            literal: Some(token.to_string()),
+            literal: Some(literal),
         })
     } else {
         None
