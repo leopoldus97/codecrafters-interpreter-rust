@@ -197,7 +197,7 @@ fn get_keyword(line: &str) -> Option<Token> {
 }
 
 fn get_punctuation(line: &str) -> Option<Token> {
-    let re = Regex::new(r"^(==|[(){};,\+\-\*!=<>/\.])").unwrap();
+    let re = Regex::new(r"^(!=|==|[(){};,\+\-\*!=<>/\.])").unwrap();
 
     if !re.is_match(line) {
         return None;
