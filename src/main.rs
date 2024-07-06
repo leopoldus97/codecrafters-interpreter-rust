@@ -32,7 +32,9 @@ fn main() {
                         println!("{}", token);
                     }
 
-                    exit_code = code;
+                    if let Some(c) = code {
+                        exit_code = c;
+                    }
                 }
             }
 
@@ -123,10 +125,10 @@ impl Display for Token {
     }
 }
 
-fn eat_string(line: &str, line_number: usize) -> (Vec<Token>, i32) {
+fn eat_string(line: &str, line_number: usize) -> (Vec<Token>, Option<i32>) {
     let mut tokens = Vec::new();
     let mut line = line;
-    let mut exit_code = 0;
+    let mut exit_code = None;
 
     while !line.is_empty() {
         let stripped_line = line.trim_start();
@@ -166,7 +168,7 @@ fn eat_string(line: &str, line_number: usize) -> (Vec<Token>, i32) {
             };
 
             writeln!(io::stderr(), "{}", err).unwrap();
-            exit_code = err.get_exit_code();
+            exit_code = Some(err.get_exit_code());
             
             None
         };
