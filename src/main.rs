@@ -59,12 +59,15 @@ enum TokenizerError {
     // FileReadError(String),
     #[error("[line {0}] Error: Unexpected character: {1}")]
     UnexpectedCharacterError(usize, char),
+    #[error("[line {0}] Error: Unterminated string.")]
+    UnterminatedStringError(usize),
 }
 
 impl TokenizerError {
     fn get_exit_code(&self) -> i32 {
         match self {
             TokenizerError::UnexpectedCharacterError(_, _) => 65,
+            TokenizerError::UnterminatedStringError(_) => 65, // Maybe something else...
         }
     }
 }
@@ -147,13 +150,24 @@ fn eat_string(line: &str, line_number: usize) -> (Vec<Token>, i32) {
         } else if let Some(token) = get_identifier(stripped_line) {
             Some(token)
         } else {
-            let err = TokenizerError::UnexpectedCharacterError(
-                line_number,
-                stripped_line.chars().next().unwrap(),
-            );
+            let err = if !has_even_occurrences(line, '"') {
+                let err = TokenizerError::UnterminatedStringError(
+                    line_number,
+                );
+                line = "";
+                err
+            } else {
+                let err = TokenizerError::UnexpectedCharacterError(
+                    line_number,
+                    stripped_line.chars().next().unwrap(),
+                );
+                line = &stripped_line[1..];
+                err
+            };
+
             writeln!(io::stderr(), "{}", err).unwrap();
-            line = &stripped_line[1..];
             exit_code = err.get_exit_code();
+            
             None
         };
 
@@ -285,4 +299,8 @@ fn get_identifier(line: &str) -> Option<Token> {
 
 fn is_comment(line: &str) -> bool {
     line.starts_with("//")
+}
+
+fn has_even_occurrences(s: &str, c: char) -> bool {
+    s.chars().filter(|&x| x == c).count() % 2 == 0
 }
