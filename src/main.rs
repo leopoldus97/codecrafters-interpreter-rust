@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::env;
+use std::{env, process};
 use std::fmt::Display;
 use std::fs;
 use std::io::{self, Write};
@@ -15,6 +15,7 @@ fn main() {
 
     let command = &args[1];
     let filename = &args[2];
+    let mut exit_code = 0;
 
     match command.as_str() {
         "tokenize" => {
@@ -25,8 +26,14 @@ fn main() {
 
             if !file_contents.is_empty() {
                 for (line_number, mut line) in file_contents.lines().enumerate() {
-                    while let Some(token) = eat_string(&mut line, line_number + 1) {
-                        println!("{}", token);
+                    while let Some(result) = eat_string(&mut line, line_number + 1) {
+                        match result {
+                            Ok(token) => println!("{}", token),
+                            Err(e) => {
+                                writeln!(io::stderr(), "{}", e).unwrap();
+                                exit_code = e.get_exit_code();
+                            },                      
+                        }
                     }
                 }
             }
@@ -44,6 +51,36 @@ fn main() {
             return;
         }
     }
+    process::exit(exit_code);
+}
+
+#[derive(thiserror::Error, Debug)]
+enum TokenizerError {
+    // #[error("Failed to read file {0}")]
+    // FileReadError(String),
+    #[error("[line {0}] Error: Unexpected character: {1}")]
+    UnexpectedCharacterError(usize, char),
+}
+
+impl TokenizerError {
+    fn get_exit_code(&self) -> i32 {
+        match self {
+            TokenizerError::UnexpectedCharacterError(_, _) => 65,
+        }
+    }
+}
+
+#[derive(thiserror::Error, Debug)]
+enum Error {
+    TokenizerError(#[from] TokenizerError),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::TokenizerError(e) => write!(f, "{}", e),
+        }
+    }
 }
 
 enum TokenType {
@@ -53,7 +90,6 @@ enum TokenType {
     Number,
     Identifier,
     Eof,
-    Error(usize),
 }
 
 impl Display for TokenType {
@@ -65,7 +101,6 @@ impl Display for TokenType {
             TokenType::Number => write!(f, "NUMBER"),
             TokenType::Identifier => write!(f, "IDENTIFIER"),
             TokenType::Eof => write!(f, "EOF"),
-            TokenType::Error(ln) => write!(f, "[line {}] Error: Unexpected character:", ln),
         }
     }
 }
@@ -86,8 +121,12 @@ impl Display for Token {
     }
 }
 
-fn eat_string(line: &mut &str, line_number: usize) -> Option<Token> {
+fn eat_string(line: &mut &str, line_number: usize) -> Option<Result<Token, TokenizerError>> {
     let stripped_line = line.trim_start();
+
+    if stripped_line.is_empty() {
+        return None;
+    }
 
     let token: Option<Token> = if let Some(token) = get_keyword(stripped_line) {
         Some(token)
@@ -99,17 +138,19 @@ fn eat_string(line: &mut &str, line_number: usize) -> Option<Token> {
         Some(token)
     } else if let Some(token) = get_identifier(stripped_line) {
         Some(token)
-    } else if let Some(token) = get_error(stripped_line, line_number) {
-        Some(token)
     } else {
         None
     };
 
     if let Some(token) = token {
         *line = &stripped_line[token.lexeme.len()..];
-        Some(token)
+        Some(Ok(token))
     } else {
-        None
+        *line = &stripped_line[1..];
+        Some(Err(TokenizerError::UnexpectedCharacterError(
+            line_number,
+            stripped_line.chars().next().unwrap(),
+        )))
     }
 }
 
@@ -230,17 +271,16 @@ fn get_identifier(line: &str) -> Option<Token> {
     }
 }
 
-fn get_error(line: &str, line_number: usize) -> Option<Token> {
-    let re = Regex::new(r#"^[^(){};,\+\-\*!=<>/\."a-zA-Z0-9]"#).unwrap();
-    if let Some(token) = re.find(line) {
-        let token = token.as_str();
+// fn get_unknown_character(line: &str, line_number: usize) -> Result<(), TokenizerError> {
+//     let re = Regex::new(r#"^[^(){};,\+\-\*!=<>/\."a-zA-Z0-9]"#).unwrap();
+//     if let Some(token) = re.find(line) {
+//         let token = token.as_str();
 
-        Some(Token {
-            token_type: TokenType::Error(line_number),
-            lexeme: token.to_string(),
-            literal: Some("".to_string()),
-        })
-    } else {
-        None
-    }
-}
+//         Err(TokenizerError::UnexpectedCharacterError(
+//             line_number,
+//             token.chars().next().unwrap(),
+//         ))
+//     } else {
+//         Ok(())
+//     }
+// }
