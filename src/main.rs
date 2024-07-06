@@ -132,6 +132,10 @@ fn eat_string(line: &str, line_number: usize) -> (Vec<Token>, i32) {
             break;
         }
 
+        if is_comment(line) {
+            break;
+        }
+
         let token: Option<Token> = if let Some(token) = get_keyword(stripped_line) {
             Some(token)
         } else if let Some(token) = get_punctuation(stripped_line) {
@@ -277,4 +281,8 @@ fn get_identifier(line: &str) -> Option<Token> {
     } else {
         None
     }
+}
+
+fn is_comment(line: &str) -> bool {
+    line.starts_with("//")
 }
