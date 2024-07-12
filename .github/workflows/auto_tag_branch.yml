@@ -1,8 +1,11 @@
-name: Auto Tag Branch
+name: Auto Label PR
 
 on:
   pull_request:
-    types: [opened]
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 jobs:
   tag:
@@ -14,29 +17,34 @@ jobs:
 
       - name: Get branch name
         id: vars
-        run: echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+        run: echo "branch_name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
 
-      - name: Determine tag
-        id: tag
+      - name: Determine label
+        if: check_tags == 'false'
+        id: label
         run: |
           branch_name=${{ steps.vars.outputs.branch_name }}
           echo "Branch name: $branch_name"
           if [[ "$branch_name" == feature/* ]]; then
-            tag="feature"
+            label="feature"
           elif [[ "$branch_name" == bug/* ]]; then
-            tag="bug"
+            label="bug"
           elif [[ "$branch_name" == chore/* ]]; then
-            tag="chore"
+            label="chore"
           else
-            tag=""
+            label=""
           fi
-          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "label=$label" >> $GITHUB_OUTPUT
 
-      - name: Create and push tag
-        if: steps.tag.output.tag != ''
+      - name: Add label to PR
+        if: steps.label.outputs.label != 'other' && steps.label.outputs.label != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag_name=${{ steps.tag.outputs.tag }}-${{ steps.vars.outputs.branch_name }}
-          git tag $tag_name
-          git push origin $tag_name
+          label_name=${{ steps.label.outputs.label }}
+          echo "Adding label '$label_name' to PR"
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels \
+            -d "{\"labels\":[\"$label_name\"]}"
