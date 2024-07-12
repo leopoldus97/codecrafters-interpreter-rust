@@ -1,0 +1,42 @@
+name: Auto Tag Branch
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get branch name
+        id: vars
+        run: echo "::set-output name=branch_name::${GITHUB_REF#refs/heads/}"
+
+      - name: Determine tag
+        id: tag
+        run: |
+          branch_name=${{ steps.vars.outputs.branch_name }}
+          echo "Branch name: $branch_name"
+          if [[ "$branch_name" == feature/* ]]; then
+            tag="feature"
+          elif [[ "$branch_name" == bug/* ]]; then
+            tag="bug"
+          elif [[ "$branch_name" == chore/* ]]; then
+            tag="chore"
+          else
+            tag=""
+          fi
+          echo "::set-output name=tag::$tag"
+
+      - name: Create and push tag
+        if: ${{ steps.tag.output.tag != "" }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag_name=${{ steps.tag.outputs.tag }}-${{ steps.vars.outputs.branch_name }}
+          git tag $tag_name
+          git push origin $tag_name
