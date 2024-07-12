@@ -14,7 +14,7 @@ jobs:
 
       - name: Get branch name
         id: vars
-        run: echo "::set-output name=branch_name::${GITHUB_REF#refs/heads/}"
+        run: echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
 
       - name: Determine tag
         id: tag
@@ -30,7 +30,7 @@ jobs:
           else
             tag=""
           fi
-          echo "::set-output name=tag::$tag"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
 
       - name: Create and push tag
         if: steps.tag.output.tag != ''
