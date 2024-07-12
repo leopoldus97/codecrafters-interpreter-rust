@@ -2,11 +2,31 @@ use std::fs;
 use std::io::{self, Write};
 use std::{env, process};
 
+use interpreter_starter_rust::ast::printer::AstPrinter;
+use interpreter_starter_rust::ast::binary::Binary;
+use interpreter_starter_rust::ast::grouping::Grouping;
+use interpreter_starter_rust::ast::literal::Literal;
+use interpreter_starter_rust::ast::unary::Unary;
+use interpreter_starter_rust::scanner::token::{Object, Token};
+use interpreter_starter_rust::scanner::token_type::TokenType;
 use interpreter_starter_rust::scanner::Scanner;
 use interpreter_starter_rust::HAD_ERROR;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+
+    let expression = Binary::new(
+        Box::new(Unary::new(
+            Token::new(TokenType::Minus, String::from("-"), None, 1),
+            Box::new(Literal::new(Object::Num(123 as f64))),
+        )),
+        Token::new(TokenType::Star, String::from("*"), None, 1),
+        Box::new(Grouping::new(
+            Box::new(Literal::new(Object::Num(45.67)))
+        ))
+    );
+
+    println!("{}", AstPrinter::new().print(Box::new(expression)));
 
     if args.len() > 2 {
         writeln!(io::stderr(), "Usage: {} [script]", args[0]).unwrap();
