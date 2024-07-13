@@ -5,6 +5,8 @@ use std::{
     sync::atomic::Ordering,
 };
 
+use lox_rs::{ast::printer::AstPrinter, parser::Parser, scanner::Scanner, HAD_ERROR};
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -52,4 +54,13 @@ fn run_prompt() {
 fn run(source: String) {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
+
+    let mut parser = Parser::new(tokens.to_owned());
+    let expression = parser.parse();
+
+    if HAD_ERROR.load(Ordering::SeqCst) {
+        return;
+    }
+
+    println!("{}", AstPrinter::new().print(expression.unwrap()));
 }
