@@ -16,8 +16,8 @@ impl<R> Unary<R> {
         &self.operator
     }
 
-    pub fn right(&self) -> &Box<dyn Expr<R>> {
-        &self.right
+    pub fn right(&self) -> &dyn Expr<R> {
+        self.right.as_ref()
     }
 }
 

@@ -10,14 +10,14 @@ use lox_rs::{ast::printer::AstPrinter, parser::Parser, scanner::Scanner, HAD_ERR
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() > 2 {
-        eprintln!("Usage: {} [script]", args[0]).unwrap();
-        process::exit(64);
-    } else if args.len() == 2 {
-        run_file(&args[1]);
-    } else {
-        run_prompt();
-    };
+    match args.len() {
+        1 => run_prompt(),
+        2 => run_file(&args[1]),
+        _ => {
+            eprintln!("Usage: {} [script]", args[0]);
+            process::exit(64);
+        }
+    }
 }
 
 fn run_file(file_path: &String) {

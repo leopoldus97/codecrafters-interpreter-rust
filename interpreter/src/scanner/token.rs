@@ -37,7 +37,7 @@ impl Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal.to_string())
+        write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal)
     }
 }
 

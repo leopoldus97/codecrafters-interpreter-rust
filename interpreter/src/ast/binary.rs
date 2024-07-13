@@ -13,16 +13,16 @@ impl<R> Binary<R> {
         Self { left, operator, right }
     }
 
-    pub fn left(&self) -> &Box<dyn Expr<R>> {
-        &self.left
+    pub fn left(&self) -> &dyn Expr<R> {
+        self.left.as_ref()
     }
 
     pub fn operator(&self) -> &Token {
         &self.operator
     }
 
-    pub fn right(&self) -> &Box<dyn Expr<R>> {
-        &self.right
+    pub fn right(&self) -> &dyn Expr<R> {
+        self.right.as_ref()
     }
 }
 
