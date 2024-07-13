@@ -62,5 +62,4 @@ fn run(source: String) {
         return;
     }
 
-    println!("{}", AstPrinter::new().print(expression.unwrap()));
 }

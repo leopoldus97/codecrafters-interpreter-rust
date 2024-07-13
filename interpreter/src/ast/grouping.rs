@@ -1,21 +1,21 @@
 use super::Expr;
 
-pub struct Grouping<R> {
-    expression: Box<dyn Expr<R>>,
+pub struct Grouping<R, E> {
+    expression: Box<dyn Expr<R, E>>,
 }
 
-impl<R> Grouping<R> {
-    pub fn new(expression: Box<dyn Expr<R>>) -> Self {
+impl<R, E> Grouping<R, E> {
+    pub fn new(expression: Box<dyn Expr<R, E>>) -> Self {
         Self { expression }
     }
 
-    pub fn expression(&self) -> &dyn Expr<R> {
+    pub fn expression(&self) -> &dyn Expr<R, E> {
         self.expression.as_ref()
     }
 }
 
-impl<R> Expr<R> for Grouping<R> {
-    fn accept(&self, visitor: &mut dyn crate::ast::Visitor<R>) -> R {
+impl<R, E> Expr<R, E> for Grouping<R, E> {
+    fn accept(&self, visitor: &mut dyn crate::ast::Visitor<R, E>) -> Result<R, E> {
         visitor.visit_grouping_expr(self)
     }
 }

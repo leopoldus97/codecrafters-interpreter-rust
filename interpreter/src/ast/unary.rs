@@ -2,13 +2,13 @@ use crate::scanner::token::Token;
 
 use super::Expr;
 
-pub struct Unary<R> {
+pub struct Unary<R, E> {
     operator: Token,
-    right: Box<dyn Expr<R>>,
+    right: Box<dyn Expr<R, E>>,
 }
 
-impl<R> Unary<R> {
-    pub fn new(operator: Token, right: Box<dyn Expr<R>>) -> Self {
+impl<R, E> Unary<R, E> {
+    pub fn new(operator: Token, right: Box<dyn Expr<R, E>>) -> Self {
         Self { operator, right }
     }
 
@@ -16,13 +16,13 @@ impl<R> Unary<R> {
         &self.operator
     }
 
-    pub fn right(&self) -> &dyn Expr<R> {
+    pub fn right(&self) -> &dyn Expr<R, E> {
         self.right.as_ref()
     }
 }
 
-impl<R> Expr<R> for Unary<R> {
-    fn accept(&self, visitor: &mut dyn crate::ast::Visitor<R>) -> R {
+impl<R, E> Expr<R, E> for Unary<R, E> {
+    fn accept(&self, visitor: &mut dyn crate::ast::Visitor<R, E>) -> Result<R, E> {
         visitor.visit_unary_expr(self)
     }
 }

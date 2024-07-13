@@ -14,8 +14,8 @@ impl Literal {
     }
 }
 
-impl<R> crate::ast::Expr<R> for Literal {
-    fn accept(&self, visitor: &mut dyn crate::ast::Visitor<R>) -> R {
+impl<R, E> crate::ast::Expr<R, E> for Literal {
+    fn accept(&self, visitor: &mut dyn crate::ast::Visitor<R, E>) -> Result<R, E> {
         visitor.visit_literal_expr(self)
     }
 }
