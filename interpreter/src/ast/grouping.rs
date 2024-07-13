@@ -9,8 +9,8 @@ impl<R> Grouping<R> {
         Self { expression }
     }
 
-    pub fn expression(&self) -> &Box<dyn Expr<R>> {
-        &self.expression
+    pub fn expression(&self) -> &dyn Expr<R> {
+        self.expression.as_ref()
     }
 }
 

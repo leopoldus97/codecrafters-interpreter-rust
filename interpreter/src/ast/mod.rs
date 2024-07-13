@@ -1,8 +1,8 @@
 pub mod binary;
 pub mod grouping;
 pub mod literal;
-pub mod unary;
 pub mod printer;
+pub mod unary;
 
 pub trait Expr<R> {
     fn accept(&self, visitor: &mut dyn Visitor<R>) -> R;
