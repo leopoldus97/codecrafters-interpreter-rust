@@ -5,7 +5,7 @@ use std::{
     sync::atomic::Ordering,
 };
 
-use lox_rs::{ast::printer::AstPrinter, parser::Parser, scanner::Scanner, HAD_ERROR};
+use lox_rs::{ast::printer::AstPrinter, interpreter::{self, Interpreter}, parser::Parser, scanner::Scanner, HAD_ERROR, HAD_RUNTIME_ERROR};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -26,10 +26,16 @@ fn run_file(file_path: &String) {
         process::exit(74);
     });
 
-    run(file_contents);
+    let mut interpreter = Interpreter::new();
+
+    run(file_contents, &mut interpreter);
 
     if HAD_ERROR.load(Ordering::SeqCst) {
         process::exit(65);
+    }
+    
+    if HAD_RUNTIME_ERROR.load(Ordering::SeqCst) {
+        process::exit(70);
     }
 }
 
@@ -45,13 +51,15 @@ fn run_prompt() {
             break;
         }
 
-        run(line);
+        let mut interpreter = Interpreter::new();
+
+        run(line, &mut interpreter);
 
         HAD_ERROR.store(false, Ordering::SeqCst)
     }
 }
 
-fn run(source: String) {
+fn run(source: String, interpreter: &mut Interpreter) {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
@@ -62,4 +70,5 @@ fn run(source: String) {
         return;
     }
 
+    interpreter.interpret(expression.unwrap());
 }
