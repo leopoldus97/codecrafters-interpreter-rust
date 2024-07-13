@@ -5,7 +5,9 @@ use std::{
     sync::atomic::Ordering,
 };
 
-use lox_rs::{ast::printer::AstPrinter, interpreter::{self, Interpreter}, parser::Parser, scanner::Scanner, HAD_ERROR, HAD_RUNTIME_ERROR};
+use lox_rs::{
+    interpreter::Interpreter, parser::Parser, scanner::Scanner, HAD_ERROR, HAD_RUNTIME_ERROR,
+};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -33,7 +35,7 @@ fn run_file(file_path: &String) {
     if HAD_ERROR.load(Ordering::SeqCst) {
         process::exit(65);
     }
-    
+
     if HAD_RUNTIME_ERROR.load(Ordering::SeqCst) {
         process::exit(70);
     }

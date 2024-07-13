@@ -37,21 +37,30 @@ impl Visitor<Object, RuntimeError> for Interpreter {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Num(l - r))
                 } else {
-                    Err(RuntimeError::new(String::from("Both operands must be numbers"), expr.operator().to_owned()))
+                    Err(RuntimeError::new(
+                        String::from("Both operands must be numbers"),
+                        expr.operator().to_owned(),
+                    ))
                 }
             }
             TokenType::Slash => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Num(l / r))
                 } else {
-                    Err(RuntimeError::new(String::from("Both operands must be numbers"), expr.operator().to_owned()))
+                    Err(RuntimeError::new(
+                        String::from("Both operands must be numbers"),
+                        expr.operator().to_owned(),
+                    ))
                 }
             }
             TokenType::Star => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Num(l * r))
                 } else {
-                    Err(RuntimeError::new(String::from("Both operands must be numbers"), expr.operator().to_owned()))
+                    Err(RuntimeError::new(
+                        String::from("Both operands must be numbers"),
+                        expr.operator().to_owned(),
+                    ))
                 }
             }
             TokenType::Plus => match (left, right) {
@@ -59,34 +68,49 @@ impl Visitor<Object, RuntimeError> for Interpreter {
                 (Object::Str(l), Object::Str(r)) => Ok(Object::Str(format!("{}{}", l, r))),
                 (Object::Str(l), Object::Num(r)) => Ok(Object::Str(format!("{}{}", l, r))),
                 (Object::Num(l), Object::Str(r)) => Ok(Object::Str(format!("{}{}", l, r))),
-                _ => Err(RuntimeError::new(String::from("Both operands must be numbers or strings"), expr.operator().to_owned())),
+                _ => Err(RuntimeError::new(
+                    String::from("Both operands must be numbers or strings"),
+                    expr.operator().to_owned(),
+                )),
             },
             TokenType::Greater => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Bool(l > r))
                 } else {
-                    Err(RuntimeError::new(String::from("Both operands must be numbers"), expr.operator().to_owned()))
+                    Err(RuntimeError::new(
+                        String::from("Both operands must be numbers"),
+                        expr.operator().to_owned(),
+                    ))
                 }
             }
             TokenType::GreaterEqual => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Bool(l >= r))
                 } else {
-                    Err(RuntimeError::new(String::from("Both operands must be numbers"), expr.operator().to_owned()))
+                    Err(RuntimeError::new(
+                        String::from("Both operands must be numbers"),
+                        expr.operator().to_owned(),
+                    ))
                 }
             }
             TokenType::Less => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Bool(l < r))
                 } else {
-                    Err(RuntimeError::new(String::from("Both operands must be numbers"), expr.operator().to_owned()))
+                    Err(RuntimeError::new(
+                        String::from("Both operands must be numbers"),
+                        expr.operator().to_owned(),
+                    ))
                 }
             }
             TokenType::LessEqual => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Bool(l <= r))
                 } else {
-                    Err(RuntimeError::new(String::from("Both operands must be numbers"), expr.operator().to_owned()))
+                    Err(RuntimeError::new(
+                        String::from("Both operands must be numbers"),
+                        expr.operator().to_owned(),
+                    ))
                 }
             }
             TokenType::BangEqual => Ok(Object::Bool(!is_equal(left, right))),
@@ -117,7 +141,10 @@ impl Visitor<Object, RuntimeError> for Interpreter {
                 if let Object::Num(n) = right {
                     Ok(Object::Num(n.neg()))
                 } else {
-                    Err(RuntimeError::new(String::from("Unary minus must be applied to a number"), expr.operator().to_owned()))
+                    Err(RuntimeError::new(
+                        String::from("Unary minus must be applied to a number"),
+                        expr.operator().to_owned(),
+                    ))
                 }
             }
             TokenType::Bang => Ok(Object::Bool(!right.is_truthy())),
@@ -125,6 +152,12 @@ impl Visitor<Object, RuntimeError> for Interpreter {
         };
 
         result
+    }
+}
+
+impl Default for Interpreter {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
