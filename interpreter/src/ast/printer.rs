@@ -13,7 +13,7 @@ impl AstPrinter {
 
     fn parenthesize(&mut self, name: &str, exprs: &[&dyn Expr<String>]) -> String {
         let mut result = String::from("(");
-        
+
         result.push_str(name);
         for expr in exprs {
             result.push(' ');

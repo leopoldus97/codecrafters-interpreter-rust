@@ -1,4 +1,7 @@
-use crate::{scanner::{token::Token, token_type::TokenType}, utils::report};
+use crate::{
+    scanner::{token::Token, token_type::TokenType},
+    utils::report,
+};
 
 pub(super) struct ParseError {}
 

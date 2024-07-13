@@ -36,8 +36,12 @@ impl Scanner {
             self.scan_token();
         }
 
-        self.tokens
-            .push(Token::new(TokenType::Eof, "".to_string(), Object::Nil, self.line));
+        self.tokens.push(Token::new(
+            TokenType::Eof,
+            "".to_string(),
+            Object::Nil,
+            self.line,
+        ));
         &self.tokens
     }
 

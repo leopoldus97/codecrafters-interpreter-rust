@@ -10,7 +10,11 @@ pub struct Binary<R> {
 
 impl<R> Binary<R> {
     pub fn new(left: Box<dyn Expr<R>>, operator: Token, right: Box<dyn Expr<R>>) -> Self {
-        Self { left, operator, right }
+        Self {
+            left,
+            operator,
+            right,
+        }
     }
 
     pub fn left(&self) -> &dyn Expr<R> {

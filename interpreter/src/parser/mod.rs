@@ -30,8 +30,7 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse<R: 'static>(&mut self) -> Option<Box<dyn Expr<R>>>
-    {
+    pub fn parse<R: 'static>(&mut self) -> Option<Box<dyn Expr<R>>> {
         match self.expression() {
             Ok(expr) => Some(expr),
             Err(_) => None,
@@ -115,13 +114,11 @@ impl Parser {
 }
 
 impl Parser {
-    fn expression<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError>
-    {
+    fn expression<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         self.equality::<R>()
     }
 
-    fn equality<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError>
-    {
+    fn equality<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         let mut expr = self.comparison::<R>()?;
 
         while self.match_token_types(&[TokenType::BangEqual, TokenType::EqualEqual]) {
@@ -133,8 +130,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn comparison<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError>
-    {
+    fn comparison<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         let mut expr = self.term::<R>()?;
 
         while self.match_token_types(&[
@@ -151,8 +147,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn term<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError>
-    {
+    fn term<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         let mut expr = self.factor::<R>()?;
 
         while self.match_token_types(&[TokenType::Minus, TokenType::Plus]) {
@@ -164,8 +159,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn factor<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError>
-    {
+    fn factor<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         let mut expr = self.unary::<R>()?;
 
         while self.match_token_types(&[TokenType::Slash, TokenType::Star]) {
@@ -177,8 +171,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn unary<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError>
-    {
+    fn unary<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         if self.match_token_types(&[TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous();
             let right = self.unary::<R>()?;
@@ -188,8 +181,7 @@ impl Parser {
         }
     }
 
-    fn primary<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError>
-    {
+    fn primary<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         if self.match_token_types(&[TokenType::False]) {
             Ok(Box::new(Literal::new(Object::Bool(false))))
         } else if self.match_token_types(&[TokenType::True]) {
