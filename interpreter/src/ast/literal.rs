@@ -1,15 +1,15 @@
 use crate::scanner::token::Object;
 
 pub struct Literal {
-    pub value: Option<Object>,
+    pub value: Object,
 }
 
 impl Literal {
     pub fn new(value: Object) -> Self {
-        Self { value: Some(value) }
+        Self { value }
     }
 
-    pub fn value(&self) -> &Option<Object> {
+    pub fn value(&self) -> &Object {
         &self.value
     }
 }

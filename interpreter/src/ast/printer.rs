@@ -11,15 +11,15 @@ impl AstPrinter {
         expr.accept(self)
     }
 
-    fn parenthesize(&mut self, name: &str, exprs: &[&Box<dyn Expr<String>>]) -> String {
+    fn parenthesize(&mut self, name: &str, exprs: &[&dyn Expr<String>]) -> String {
         let mut result = String::from("(");
         
         result.push_str(name);
         for expr in exprs {
-            result.push_str(" ");
+            result.push(' ');
             result.push_str(&expr.accept(self));
         }
-        result.push_str(")");
+        result.push(')');
         result
     }
 }
@@ -27,7 +27,7 @@ impl AstPrinter {
 impl Visitor<String> for AstPrinter {
     fn visit_binary_expr(&mut self, expr: &binary::Binary<String>) -> String {
         let exprs = [expr.left(), expr.right()];
-        self.parenthesize(&expr.operator().lexeme(), &exprs)
+        self.parenthesize(expr.operator().lexeme(), &exprs)
     }
 
     fn visit_grouping_expr(&mut self, expr: &grouping::Grouping<String>) -> String {
@@ -36,15 +36,17 @@ impl Visitor<String> for AstPrinter {
     }
 
     fn visit_literal_expr(&mut self, expr: &literal::Literal) -> String {
-        let value = match expr.value() {
-            Some(value) => value.to_string(),
-            None => "nil".to_string(),
-        };
-        value
+        expr.value().to_string()
     }
 
     fn visit_unary_expr(&mut self, expr: &unary::Unary<String>) -> String {
         let exprs = [expr.right()];
-        self.parenthesize(&expr.operator().lexeme(), &exprs)
+        self.parenthesize(expr.operator().lexeme(), &exprs)
+    }
+}
+
+impl Default for AstPrinter {
+    fn default() -> Self {
+        Self::new()
     }
 }

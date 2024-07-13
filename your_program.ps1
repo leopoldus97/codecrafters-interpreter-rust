@@ -16,11 +16,11 @@ $ErrorActionPreference = "Stop"
 cargo build `
     --quiet `
     --release `
-    --target-dir="/tmp/codecrafters-interpreter-target" `
-    --manifest-path Cargo.toml
+    --target-dir="/tmp/lox-rs" `
+    --manifest-path ./interpreter/Cargo.toml
 
 # Copied from .codecrafters/run.sh
 #
 # - Edit this to change how your program runs locally
 # - Edit .codecrafters/run.sh to change how your program runs remotely
-& "/tmp/codecrafters-interpreter-target/release/interpreter-starter-rust" $args
+& "/tmp/lox-rs/release/lox-rs" $args
