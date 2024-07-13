@@ -41,7 +41,7 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Object {
     Str(String),
     Num(f64),
@@ -65,6 +65,16 @@ impl Object {
         match self {
             Object::Num(n) => Ok(*n),
             _ => Err("Object is not a number".into()),
+        }
+    }
+
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Object::Bool(b) => *b,
+            Object::Nil => false,
+            // Object::Str(s) if s == "" => false,
+            // Object::Num(n) if *n == 0.0 => false,
+            _ => true,
         }
     }
 }
