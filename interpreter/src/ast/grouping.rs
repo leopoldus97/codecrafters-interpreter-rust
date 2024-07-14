@@ -1,4 +1,4 @@
-use super::Expr;
+use super::expr::{self, Expr};
 
 pub struct Grouping<R, E> {
     expression: Box<dyn Expr<R, E>>,
@@ -15,7 +15,7 @@ impl<R, E> Grouping<R, E> {
 }
 
 impl<R, E> Expr<R, E> for Grouping<R, E> {
-    fn accept(&self, visitor: &mut dyn crate::ast::Visitor<R, E>) -> Result<R, E> {
+    fn accept(&self, visitor: &mut dyn expr::Visitor<R, E>) -> Result<R, E> {
         visitor.visit_grouping_expr(self)
     }
 }

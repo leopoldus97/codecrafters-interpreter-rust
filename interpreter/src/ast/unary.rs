@@ -1,6 +1,6 @@
 use crate::scanner::token::Token;
 
-use super::Expr;
+use super::expr::{self, Expr};
 
 pub struct Unary<R, E> {
     operator: Token,
@@ -22,7 +22,7 @@ impl<R, E> Unary<R, E> {
 }
 
 impl<R, E> Expr<R, E> for Unary<R, E> {
-    fn accept(&self, visitor: &mut dyn crate::ast::Visitor<R, E>) -> Result<R, E> {
+    fn accept(&self, visitor: &mut dyn expr::Visitor<R, E>) -> Result<R, E> {
         visitor.visit_unary_expr(self)
     }
 }

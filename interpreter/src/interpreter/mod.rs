@@ -5,7 +5,7 @@ use std::ops::Neg;
 use error::{runtime_error, RuntimeError};
 
 use crate::{
-    ast::{binary::Binary, grouping::Grouping, literal::Literal, unary::Unary, Expr, Visitor},
+    ast::{binary::Binary, expr::{self, Expr}, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt, unary::Unary},
     scanner::{token::Object, token_type::TokenType},
 };
 
@@ -24,7 +24,7 @@ impl Interpreter {
     }
 }
 
-impl Visitor<Object, RuntimeError> for Interpreter {
+impl expr::Visitor<Object, RuntimeError> for Interpreter {
     fn visit_binary_expr(
         &mut self,
         expr: &Binary<Object, RuntimeError>,

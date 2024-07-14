@@ -3,22 +3,12 @@ mod error;
 use error::ParseError;
 
 use crate::{
-    ast::{binary::Binary, grouping::Grouping, literal::Literal, unary::Unary, Expr},
+    ast::{binary::Binary, expr::Expr, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt::Stmt, unary::Unary},
     scanner::{
         token::{Object, Token},
         token_type::TokenType,
     },
 };
-
-// expression     → equality ;
-// equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-// comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-// term           → factor ( ( "-" | "+" ) factor )* ;
-// factor         → unary ( ( "/" | "*" ) unary )* ;
-// unary          → ( "!" | "-" ) unary
-//                | primary ;
-// primary        → NUMBER | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" ;
 
 pub struct Parser {
     tokens: Vec<Token>,

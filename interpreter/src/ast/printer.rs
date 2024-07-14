@@ -1,4 +1,4 @@
-use super::{binary, grouping, literal, unary, Expr, Visitor};
+use super::{binary, grouping, literal, unary, expr::{self, Expr}};
 
 pub struct AstPrinter {}
 
@@ -31,7 +31,7 @@ impl AstPrinter {
     }
 }
 
-impl Visitor<String, Box<dyn std::error::Error>> for AstPrinter {
+impl expr::Visitor<String, Box<dyn std::error::Error>> for AstPrinter {
     fn visit_binary_expr(
         &mut self,
         expr: &binary::Binary<String, Box<dyn std::error::Error>>,
