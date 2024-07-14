@@ -1,6 +1,9 @@
 use crate::{scanner::token::Object, utils::error::Error};
 
-use super::{expr::Expr, stmt::{self, Stmt}};
+use super::{
+    expr::Expr,
+    stmt::{self, Stmt},
+};
 
 pub struct Print {
     expression: Box<dyn Expr<Object>>,
@@ -21,4 +24,3 @@ impl Stmt for Print {
         visitor.visit_print_stmt(self)
     }
 }
-

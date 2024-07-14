@@ -7,6 +7,18 @@ pub enum Error {
     ScanError,
 }
 
+impl From<ParseError> for Error {
+    fn from(e: ParseError) -> Self {
+        Error::ParseError(e)
+    }
+}
+
+impl From<RuntimeError> for Error {
+    fn from(e: RuntimeError) -> Self {
+        Error::RuntimeError(e)
+    }
+}
+
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -26,9 +38,9 @@ impl ParseError {
     }
 }
 
-impl Into<Error> for ParseError {
-    fn into(self) -> Error {
-        Error::ParseError(self)
+impl Default for ParseError {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -52,8 +64,8 @@ impl RuntimeError {
     }
 }
 
-impl Into<Error> for RuntimeError {
-    fn into(self) -> Error {
-        Error::RuntimeError(self)
+impl Default for RuntimeError {
+    fn default() -> Self {
+        Self::new(String::new(), Token::default())
     }
 }

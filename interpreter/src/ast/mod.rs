@@ -22,7 +22,7 @@ pub mod expr {
     use crate::utils::error::Error;
 
     use super::{binary, grouping, literal, unary};
-    
+
     pub trait Expr<R> {
         fn accept(&self, visitor: &mut dyn Visitor<R>) -> Result<R, Error>;
     }

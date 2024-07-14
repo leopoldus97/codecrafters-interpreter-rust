@@ -5,8 +5,20 @@ use std::ops::Neg;
 use error::runtime_error;
 
 use crate::{
-    ast::{binary::Binary, expr::{self, Expr}, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt::{self, Stmt}, unary::Unary, var::Var, variable::Variable},
-    scanner::{token::Object, token_type::TokenType}, utils::error::{Error, RuntimeError},
+    ast::{
+        binary::Binary,
+        expr::{self, Expr},
+        expression::Expression,
+        grouping::Grouping,
+        literal::Literal,
+        print::Print,
+        stmt::{self, Stmt},
+        unary::Unary,
+        var::Var,
+        variable::Variable,
+    },
+    scanner::{token::Object, token_type::TokenType},
+    utils::error::{Error, RuntimeError},
 };
 
 pub struct Interpreter {}
@@ -29,10 +41,7 @@ impl Interpreter {
 }
 
 impl expr::Visitor<Object> for Interpreter {
-    fn visit_binary_expr(
-        &mut self,
-        expr: &Binary<Object>,
-    ) -> Result<Object, Error> {
+    fn visit_binary_expr(&mut self, expr: &Binary<Object>) -> Result<Object, Error> {
         let left = evaluate(expr.left(), self)?;
         let right = evaluate(expr.right(), self)?;
 
@@ -44,7 +53,8 @@ impl expr::Visitor<Object> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
             TokenType::Slash => {
@@ -54,7 +64,8 @@ impl expr::Visitor<Object> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
             TokenType::Star => {
@@ -64,7 +75,8 @@ impl expr::Visitor<Object> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
             TokenType::Plus => match (left, right) {
@@ -75,7 +87,8 @@ impl expr::Visitor<Object> for Interpreter {
                 _ => Err(RuntimeError::new(
                     String::from("Both operands must be numbers or strings"),
                     expr.operator().to_owned(),
-                ).into()),
+                )
+                .into()),
             },
             TokenType::Greater => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
@@ -84,7 +97,8 @@ impl expr::Visitor<Object> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
             TokenType::GreaterEqual => {
@@ -94,7 +108,8 @@ impl expr::Visitor<Object> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
             TokenType::Less => {
@@ -104,7 +119,8 @@ impl expr::Visitor<Object> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
             TokenType::LessEqual => {
@@ -114,7 +130,8 @@ impl expr::Visitor<Object> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
             TokenType::BangEqual => Ok(Object::Bool(!is_equal(left, right))),
@@ -123,10 +140,7 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_grouping_expr(
-        &mut self,
-        expr: &Grouping<Object>,
-    ) -> Result<Object, Error> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping<Object>) -> Result<Object, Error> {
         evaluate(expr.expression(), self)
     }
 
@@ -134,10 +148,7 @@ impl expr::Visitor<Object> for Interpreter {
         Ok(expr.value.to_owned())
     }
 
-    fn visit_unary_expr(
-        &mut self,
-        expr: &Unary<Object>,
-    ) -> Result<Object, Error> {
+    fn visit_unary_expr(&mut self, expr: &Unary<Object>) -> Result<Object, Error> {
         let right = evaluate(expr.right(), self)?;
 
         let result = match expr.operator().token_type() {
@@ -148,7 +159,8 @@ impl expr::Visitor<Object> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Unary minus must be applied to a number"),
                         expr.operator().to_owned(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
             TokenType::Bang => Ok(Object::Bool(!right.is_truthy())),
@@ -158,10 +170,8 @@ impl expr::Visitor<Object> for Interpreter {
         result
     }
 
-    fn visit_variable_expr(
-        &mut self,
-        expr: &Variable,
-    ) -> Result<Object, Error> {
+    #[allow(unused_variables)]
+    fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
         Ok(Object::Nil)
     }
 }
@@ -178,6 +188,7 @@ impl stmt::Visitor for Interpreter {
         Ok(())
     }
 
+    #[allow(unused_variables)]
     fn visit_var_stmt(&mut self, stmt: &Var) -> Result<(), Error> {
         let value = if let Some(initializer) = stmt.initializer() {
             evaluate(initializer.as_ref(), self)?

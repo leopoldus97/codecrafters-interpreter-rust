@@ -1,11 +1,15 @@
 mod error;
 
 use crate::{
-    ast::{binary::Binary, expr::Expr, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt::Stmt, unary::Unary, var::Var, variable::Variable},
+    ast::{
+        binary::Binary, expr::Expr, expression::Expression, grouping::Grouping, literal::Literal,
+        print::Print, stmt::Stmt, unary::Unary, var::Var, variable::Variable,
+    },
     scanner::{
         token::{Object, Token},
         token_type::TokenType,
-    }, utils::error::{Error, ParseError},
+    },
+    utils::error::{Error, ParseError},
 };
 
 pub struct Parser {
@@ -142,7 +146,10 @@ impl Parser {
         } else {
             None
         };
-        self.consume(TokenType::Semicolon, "Expect ';' after variable declaration.")?;
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
         Ok(Box::new(Var::new(name, initializer)))
     }
 

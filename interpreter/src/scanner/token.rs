@@ -35,6 +35,17 @@ impl Token {
     }
 }
 
+impl Default for Token {
+    fn default() -> Self {
+        Self {
+            token_type: TokenType::Eof,
+            lexeme: String::new(),
+            literal: Object::Nil,
+            line: 0,
+        }
+    }
+}
+
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal)

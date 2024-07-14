@@ -1,6 +1,12 @@
-use crate::{scanner::token::{Object, Token}, utils::error::Error};
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::Error,
+};
 
-use super::{expr::Expr, stmt::{self, Stmt}};
+use super::{
+    expr::Expr,
+    stmt::{self, Stmt},
+};
 
 pub struct Var {
     name: Token,
@@ -9,10 +15,7 @@ pub struct Var {
 
 impl Var {
     pub fn new(name: Token, initializer: Option<Box<dyn Expr<Object>>>) -> Self {
-        Self {
-            name,
-            initializer,
-        }
+        Self { name, initializer }
     }
 
     pub fn name(&self) -> &Token {

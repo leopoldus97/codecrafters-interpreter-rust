@@ -1,6 +1,9 @@
 use crate::{scanner::token::Object, utils::error::Error};
 
-use super::{expr::Expr, stmt::{self, Stmt}};
+use super::{
+    expr::Expr,
+    stmt::{self, Stmt},
+};
 
 pub struct Expression {
     expression: Box<dyn Expr<Object>>,
