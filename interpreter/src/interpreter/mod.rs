@@ -155,6 +155,20 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
     }
 }
 
+impl stmt::Visitor<(), RuntimeError> for Interpreter {
+    fn visit_expression_stmt(&mut self, stmt: &Expression<(), RuntimeError>) -> Result<(), RuntimeError> {
+        evaluate(stmt.expression())?;
+        Ok(())
+    }
+
+    fn visit_print_stmt(&mut self, stmt: &Print<(), RuntimeError>) -> Result<(), RuntimeError> {
+        let value = evaluate(stmt.expression())?;
+        println!("{}", value);
+        Ok(())
+    }
+
+}
+
 impl Default for Interpreter {
     fn default() -> Self {
         Self::new()

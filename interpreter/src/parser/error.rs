@@ -3,7 +3,7 @@ use crate::{
     utils::report,
 };
 
-pub(super) struct ParseError {}
+pub struct ParseError {}
 
 pub(super) fn error(token: &Token, message: String) {
     if token.token_type() == &TokenType::Eof {
