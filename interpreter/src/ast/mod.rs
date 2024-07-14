@@ -16,18 +16,19 @@ pub mod expr {
     //                | primary ;
     // primary        → NUMBER | STRING | "true" | "false" | "nil"
     //                | "(" expression ")" ;
+    use crate::utils::error::Error;
 
     use super::{binary, grouping, literal, unary};
     
-    pub trait Expr<R, E> {
-        fn accept(&self, visitor: &mut dyn Visitor<R, E>) -> Result<R, E>;
+    pub trait Expr<R> {
+        fn accept(&self, visitor: &mut dyn Visitor<R>) -> Result<R, Error>;
     }
 
-    pub trait Visitor<R, E> {
-        fn visit_binary_expr(&mut self, expr: &binary::Binary<R, E>) -> Result<R, E>;
-        fn visit_grouping_expr(&mut self, expr: &grouping::Grouping<R, E>) -> Result<R, E>;
-        fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<R, E>;
-        fn visit_unary_expr(&mut self, expr: &unary::Unary<R, E>) -> Result<R, E>;
+    pub trait Visitor<R> {
+        fn visit_binary_expr(&mut self, expr: &binary::Binary<R>) -> Result<R, Error>;
+        fn visit_grouping_expr(&mut self, expr: &grouping::Grouping<R>) -> Result<R, Error>;
+        fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<R, Error>;
+        fn visit_unary_expr(&mut self, expr: &unary::Unary<R>) -> Result<R, Error>;
     }
 }
 
@@ -38,14 +39,16 @@ pub mod stmt {
     // exprStmt       → expression ";" ;
     // printStmt      → "print" expression ";" ;
 
+    use crate::utils::error::Error;
+
     use super::{expression, print};
 
-    pub trait Stmt<R, E> {
-        fn accept(&self, visitor: &mut dyn Visitor<R, E>) -> Result<R, E>;
+    pub trait Stmt {
+        fn accept(&self, visitor: &mut dyn Visitor) -> Result<(), Error>;
     }
 
-    pub trait Visitor<R, E> {
-        fn visit_expression_stmt(&mut self, stmt: &expression::Expression<R, E>) -> Result<R, E>;
-        fn visit_print_stmt(&mut self, stmt: &print::Print<R, E>) -> Result<R, E>;
+    pub trait Visitor {
+        fn visit_expression_stmt(&mut self, stmt: &expression::Expression) -> Result<(), Error>;
+        fn visit_print_stmt(&mut self, stmt: &print::Print) -> Result<(), Error>;
     }
 }

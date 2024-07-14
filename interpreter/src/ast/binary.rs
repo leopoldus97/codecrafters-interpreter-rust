@@ -1,15 +1,15 @@
-use crate::scanner::token::Token;
+use crate::{scanner::token::Token, utils::error::Error};
 
 use super::expr::{self, Expr};
 
-pub struct Binary<R, E> {
-    left: Box<dyn Expr<R, E>>,
+pub struct Binary<R> {
+    left: Box<dyn Expr<R>>,
     operator: Token,
-    right: Box<dyn Expr<R, E>>,
+    right: Box<dyn Expr<R>>,
 }
 
-impl<R, E> Binary<R, E> {
-    pub fn new(left: Box<dyn Expr<R, E>>, operator: Token, right: Box<dyn Expr<R, E>>) -> Self {
+impl<R> Binary<R> {
+    pub fn new(left: Box<dyn Expr<R>>, operator: Token, right: Box<dyn Expr<R>>) -> Self {
         Self {
             left,
             operator,
@@ -17,7 +17,7 @@ impl<R, E> Binary<R, E> {
         }
     }
 
-    pub fn left(&self) -> &dyn Expr<R, E> {
+    pub fn left(&self) -> &dyn Expr<R> {
         self.left.as_ref()
     }
 
@@ -25,13 +25,13 @@ impl<R, E> Binary<R, E> {
         &self.operator
     }
 
-    pub fn right(&self) -> &dyn Expr<R, E> {
+    pub fn right(&self) -> &dyn Expr<R> {
         self.right.as_ref()
     }
 }
 
-impl<R, E> Expr<R, E> for Binary<R, E> {
-    fn accept(&self, visitor: &mut dyn expr::Visitor<R, E>) -> Result<R, E> {
+impl<R> Expr<R> for Binary<R> {
+    fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
         visitor.visit_binary_expr(self)
     }
 }

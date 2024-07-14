@@ -1,21 +1,23 @@
+use crate::{scanner::token::Object, utils::error::Error};
+
 use super::{expr::Expr, stmt::{self, Stmt}};
 
-pub struct Print<R, E> {
-    expression: Box<dyn Expr<R, E>>,
+pub struct Print {
+    expression: Box<dyn Expr<Object>>,
 }
 
-impl<R, E> Print<R, E> {
-    pub fn new(expression: Box<dyn Expr<R, E>>) -> Self {
+impl Print {
+    pub fn new(expression: Box<dyn Expr<Object>>) -> Self {
         Self { expression }
     }
 
-    pub fn expression(&self) -> &dyn Expr<R, E> {
+    pub fn expression(&self) -> &dyn Expr<Object> {
         self.expression.as_ref()
     }
 }
 
-impl<R, E> Stmt<R, E> for Print<R, E> {
-    fn accept(&self, visitor: &mut dyn stmt::Visitor<R, E>) -> Result<R, E> {
+impl Stmt for Print {
+    fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
         visitor.visit_print_stmt(self)
     }
 }

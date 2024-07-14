@@ -1,4 +1,4 @@
-use crate::scanner::token::Object;
+use crate::{scanner::token::Object, utils::error::Error};
 
 use super::expr::{self, Expr};
 
@@ -16,8 +16,8 @@ impl Literal {
     }
 }
 
-impl<R, E> Expr<R, E> for Literal {
-    fn accept(&self, visitor: &mut dyn expr::Visitor<R, E>) -> Result<R, E> {
+impl<R> Expr<R> for Literal {
+    fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
         visitor.visit_literal_expr(self)
     }
 }
