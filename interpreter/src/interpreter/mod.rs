@@ -2,11 +2,11 @@ mod error;
 
 use std::ops::Neg;
 
-use error::{runtime_error, RuntimeError};
+use error::runtime_error;
 
 use crate::{
-    ast::{binary::Binary, expr::{self, Expr}, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt, unary::Unary},
-    scanner::{token::Object, token_type::TokenType},
+    ast::{binary::Binary, expr::{self, Expr}, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt::{self, Stmt}, unary::Unary, var::Var, variable::Variable},
+    scanner::{token::Object, token_type::TokenType}, utils::error::{Error, RuntimeError},
 };
 
 pub struct Interpreter {}
@@ -16,21 +16,25 @@ impl Interpreter {
         Self {}
     }
 
-    pub fn interpret(&mut self, expr: Box<dyn Expr<Object, RuntimeError>>) {
-        match evaluate(&*expr) {
-            Ok(value) => println!("{}", value),
-            Err(e) => runtime_error(e),
+    pub fn interpret(&mut self, statements: Vec<Box<dyn Stmt>>) {
+        for statement in statements {
+            if let Err(e) = execute(statement.as_ref(), self) {
+                match e {
+                    Error::RuntimeError(e) => runtime_error(e),
+                    _ => println!("{}", e),
+                }
+            }
         }
     }
 }
 
-impl expr::Visitor<Object, RuntimeError> for Interpreter {
+impl expr::Visitor<Object> for Interpreter {
     fn visit_binary_expr(
         &mut self,
-        expr: &Binary<Object, RuntimeError>,
-    ) -> Result<Object, RuntimeError> {
-        let left = evaluate(expr.left())?;
-        let right = evaluate(expr.right())?;
+        expr: &Binary<Object>,
+    ) -> Result<Object, Error> {
+        let left = evaluate(expr.left(), self)?;
+        let right = evaluate(expr.right(), self)?;
 
         match expr.operator().token_type() {
             TokenType::Minus => {
@@ -40,7 +44,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ))
+                    ).into())
                 }
             }
             TokenType::Slash => {
@@ -50,7 +54,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ))
+                    ).into())
                 }
             }
             TokenType::Star => {
@@ -60,7 +64,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ))
+                    ).into())
                 }
             }
             TokenType::Plus => match (left, right) {
@@ -71,7 +75,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                 _ => Err(RuntimeError::new(
                     String::from("Both operands must be numbers or strings"),
                     expr.operator().to_owned(),
-                )),
+                ).into()),
             },
             TokenType::Greater => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
@@ -80,7 +84,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ))
+                    ).into())
                 }
             }
             TokenType::GreaterEqual => {
@@ -90,7 +94,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ))
+                    ).into())
                 }
             }
             TokenType::Less => {
@@ -100,7 +104,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ))
+                    ).into())
                 }
             }
             TokenType::LessEqual => {
@@ -110,7 +114,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Both operands must be numbers"),
                         expr.operator().to_owned(),
-                    ))
+                    ).into())
                 }
             }
             TokenType::BangEqual => Ok(Object::Bool(!is_equal(left, right))),
@@ -121,20 +125,20 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
 
     fn visit_grouping_expr(
         &mut self,
-        expr: &Grouping<Object, RuntimeError>,
-    ) -> Result<Object, RuntimeError> {
-        evaluate(expr.expression())
+        expr: &Grouping<Object>,
+    ) -> Result<Object, Error> {
+        evaluate(expr.expression(), self)
     }
 
-    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<Object, RuntimeError> {
+    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<Object, Error> {
         Ok(expr.value.to_owned())
     }
 
     fn visit_unary_expr(
         &mut self,
-        expr: &Unary<Object, RuntimeError>,
-    ) -> Result<Object, RuntimeError> {
-        let right = evaluate(expr.right())?;
+        expr: &Unary<Object>,
+    ) -> Result<Object, Error> {
+        let right = evaluate(expr.right(), self)?;
 
         let result = match expr.operator().token_type() {
             TokenType::Minus => {
@@ -144,7 +148,7 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
                     Err(RuntimeError::new(
                         String::from("Unary minus must be applied to a number"),
                         expr.operator().to_owned(),
-                    ))
+                    ).into())
                 }
             }
             TokenType::Bang => Ok(Object::Bool(!right.is_truthy())),
@@ -153,20 +157,36 @@ impl expr::Visitor<Object, RuntimeError> for Interpreter {
 
         result
     }
+
+    fn visit_variable_expr(
+        &mut self,
+        expr: &Variable,
+    ) -> Result<Object, Error> {
+        Ok(Object::Nil)
+    }
 }
 
-impl stmt::Visitor<(), RuntimeError> for Interpreter {
-    fn visit_expression_stmt(&mut self, stmt: &Expression<(), RuntimeError>) -> Result<(), RuntimeError> {
-        evaluate(stmt.expression())?;
+impl stmt::Visitor for Interpreter {
+    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<(), Error> {
+        evaluate(stmt.expression(), self)?;
         Ok(())
     }
 
-    fn visit_print_stmt(&mut self, stmt: &Print<(), RuntimeError>) -> Result<(), RuntimeError> {
-        let value = evaluate(stmt.expression())?;
+    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<(), Error> {
+        let value = evaluate(stmt.expression(), self)?;
         println!("{}", value);
         Ok(())
     }
 
+    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<(), Error> {
+        let value = if let Some(initializer) = stmt.initializer() {
+            evaluate(initializer.as_ref(), self)?
+        } else {
+            Object::Nil
+        };
+
+        Ok(())
+    }
 }
 
 impl Default for Interpreter {
@@ -175,8 +195,12 @@ impl Default for Interpreter {
     }
 }
 
-fn evaluate(expr: &dyn Expr<Object, RuntimeError>) -> Result<Object, RuntimeError> {
-    expr.accept(&mut Interpreter {})
+fn evaluate(expr: &dyn Expr<Object>, visitor: &mut Interpreter) -> Result<Object, Error> {
+    expr.accept(visitor)
+}
+
+fn execute(stmt: &dyn Stmt, visitor: &mut Interpreter) -> Result<(), Error> {
+    stmt.accept(visitor)
 }
 
 fn is_equal(a: Object, b: Object) -> bool {

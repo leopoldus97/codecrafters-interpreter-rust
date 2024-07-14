@@ -5,6 +5,8 @@ pub mod literal;
 pub mod print;
 pub mod printer;
 pub mod unary;
+pub mod var;
+pub mod variable;
 
 pub mod expr {
     // expression     → equality ;
@@ -15,7 +17,8 @@ pub mod expr {
     // unary          → ( "!" | "-" ) unary
     //                | primary ;
     // primary        → NUMBER | STRING | "true" | "false" | "nil"
-    //                | "(" expression ")" ;
+    //                | "(" expression ")" | IDENTIFIER ;
+
     use crate::utils::error::Error;
 
     use super::{binary, grouping, literal, unary};
@@ -29,11 +32,15 @@ pub mod expr {
         fn visit_grouping_expr(&mut self, expr: &grouping::Grouping<R>) -> Result<R, Error>;
         fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<R, Error>;
         fn visit_unary_expr(&mut self, expr: &unary::Unary<R>) -> Result<R, Error>;
+        fn visit_variable_expr(&mut self, expr: &super::variable::Variable) -> Result<R, Error>;
     }
 }
 
 pub mod stmt {
-    // program        → statement* EOF ;
+    // program        → declaration* EOF ;
+    // declaration    → varDecl
+    //                | statement ;
+    // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     // statement      → exprStmt
     //                | printStmt ;
     // exprStmt       → expression ";" ;
@@ -50,5 +57,6 @@ pub mod stmt {
     pub trait Visitor {
         fn visit_expression_stmt(&mut self, stmt: &expression::Expression) -> Result<(), Error>;
         fn visit_print_stmt(&mut self, stmt: &print::Print) -> Result<(), Error>;
+        fn visit_var_stmt(&mut self, stmt: &super::var::Var) -> Result<(), Error>;
     }
 }
