@@ -16,8 +16,12 @@ impl<R> Grouping<R> {
     }
 }
 
-impl<R> Expr<R> for Grouping<R> {
+impl<R: 'static> Expr<R> for Grouping<R> {
     fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
         visitor.visit_grouping_expr(self)
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }

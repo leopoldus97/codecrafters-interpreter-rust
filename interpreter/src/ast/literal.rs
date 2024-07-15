@@ -16,8 +16,12 @@ impl Literal {
     }
 }
 
-impl<R> Expr<R> for Literal {
+impl<R: 'static> Expr<R> for Literal {
     fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
         visitor.visit_literal_expr(self)
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }

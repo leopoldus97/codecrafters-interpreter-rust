@@ -21,8 +21,12 @@ impl<R> Unary<R> {
     }
 }
 
-impl<R> Expr<R> for Unary<R> {
+impl<R: 'static> Expr<R> for Unary<R> {
     fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
         visitor.visit_unary_expr(self)
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }

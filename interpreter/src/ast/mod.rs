@@ -21,12 +21,15 @@ pub mod expr {
     // primary        → NUMBER | STRING | "true" | "false" | "nil"
     //                | "(" expression ")" | IDENTIFIER ;
 
+    use std::any::Any;
+
     use crate::utils::error::Error;
 
     use super::{assign, binary, grouping, literal, unary};
 
-    pub trait Expr<R> {
+    pub trait Expr<R: 'static>: Any {
         fn accept(&self, visitor: &mut dyn Visitor<R>) -> Result<R, Error>;
+        fn as_any(&self) -> &dyn Any;
     }
 
     pub trait Visitor<R> {
@@ -51,12 +54,15 @@ pub mod stmt {
     // printStmt      → "print" expression ";" ;
     // block          → "{" declaration* "}" ;
 
+    use std::any::Any;
+
     use crate::utils::error::Error;
 
     use super::{expression, print};
 
-    pub trait Stmt {
+    pub trait Stmt: Any {
         fn accept(&self, visitor: &mut dyn Visitor) -> Result<(), Error>;
+        fn as_any(&self) -> &dyn Any;
     }
 
     pub trait Visitor {

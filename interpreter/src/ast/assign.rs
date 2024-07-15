@@ -25,4 +25,8 @@ impl<R: 'static> Expr<R> for Assign<R> {
     fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
         visitor.visit_assign_expr(self)
     }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }

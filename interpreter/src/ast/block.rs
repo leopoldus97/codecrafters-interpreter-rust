@@ -20,4 +20,8 @@ impl Stmt for Block {
     fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
         visitor.visit_block_stmt(self)
     }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }

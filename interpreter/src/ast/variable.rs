@@ -16,8 +16,12 @@ impl Variable {
     }
 }
 
-impl<R> Expr<R> for Variable {
+impl<R: 'static> Expr<R> for Variable {
     fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
         visitor.visit_variable_expr(self)
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
