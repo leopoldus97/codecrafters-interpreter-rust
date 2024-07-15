@@ -1,6 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{scanner::token::{Object, Token}, utils::error::{Error, RuntimeError}};
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::{Error, RuntimeError},
+};
 
 #[derive(Clone, Debug)]
 pub struct Environment {
@@ -29,21 +32,32 @@ impl Environment {
             return self.enclosing.as_ref().unwrap().borrow().get(name);
         }
 
-        let error = RuntimeError::new(format!("Undefined variable '{}'.", name.lexeme()), name.to_owned());
+        let error = RuntimeError::new(
+            format!("Undefined variable '{}'.", name.lexeme()),
+            name.to_owned(),
+        );
         Err(Error::RuntimeError(error))
     }
 
-    pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), Error>{
+    pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), Error> {
         if self.values.contains_key(name.lexeme()) {
             self.values.insert(name.lexeme().to_string(), value);
             return Ok(());
         }
 
         if self.enclosing.is_some() {
-            return self.enclosing.as_ref().unwrap().borrow_mut().assign(name, value);
+            return self
+                .enclosing
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .assign(name, value);
         }
 
-        let error = RuntimeError::new(format!("Undefined variable '{}'.", name.lexeme()), name.to_owned());
+        let error = RuntimeError::new(
+            format!("Undefined variable '{}'.", name.lexeme()),
+            name.to_owned(),
+        );
         Err(Error::RuntimeError(error))
     }
 }

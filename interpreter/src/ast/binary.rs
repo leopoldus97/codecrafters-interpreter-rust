@@ -34,7 +34,7 @@ impl<R: 'static> Expr<R> for Binary<R> {
     fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
         visitor.visit_binary_expr(self)
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }

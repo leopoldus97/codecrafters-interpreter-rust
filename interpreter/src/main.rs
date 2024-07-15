@@ -6,8 +6,11 @@ use std::{
 };
 
 use lox_rs::{
-    ast::stmt::Stmt, interpreter::{environment::Environment, Interpreter}, parser::Parser, scanner::Scanner, HAD_ERROR,
-    HAD_RUNTIME_ERROR,
+    ast::stmt::Stmt,
+    interpreter::{environment::Environment, Interpreter},
+    parser::Parser,
+    scanner::Scanner,
+    HAD_ERROR, HAD_RUNTIME_ERROR,
 };
 
 fn main() {

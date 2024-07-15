@@ -31,7 +31,7 @@ impl Stmt for Var {
     fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
         visitor.visit_var_stmt(self)
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }

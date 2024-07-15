@@ -2,7 +2,9 @@ mod error;
 
 use crate::{
     ast::{
-        assign::Assign, binary::Binary, block::Block, expr::Expr, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt::Stmt, unary::Unary, var::Var, variable::Variable
+        assign::Assign, binary::Binary, block::Block, expr::Expr, expression::Expression,
+        grouping::Grouping, literal::Literal, print::Print, stmt::Stmt, unary::Unary, var::Var,
+        variable::Variable,
     },
     scanner::{
         token::{Object, Token},
@@ -170,7 +172,8 @@ impl Parser {
             }
         }
 
-        self.consume(TokenType::RightBrace, "Expect '}' after block.").unwrap();
+        self.consume(TokenType::RightBrace, "Expect '}' after block.")
+            .unwrap();
         statements
     }
 

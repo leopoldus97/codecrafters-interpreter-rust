@@ -48,7 +48,7 @@ pub mod stmt {
     //                | statement ;
     // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     // statement      → exprStmt
-    //                | printStmt 
+    //                | printStmt
     //                | block ;
     // exprStmt       → expression ";" ;
     // printStmt      → "print" expression ";" ;

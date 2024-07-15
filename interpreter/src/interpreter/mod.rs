@@ -8,7 +8,18 @@ use error::runtime_error;
 
 use crate::{
     ast::{
-        assign::Assign, binary::Binary, block::Block, expr::{self, Expr}, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt::{self, Stmt}, unary::Unary, var::Var, variable::Variable
+        assign::Assign,
+        binary::Binary,
+        block::Block,
+        expr::{self, Expr},
+        expression::Expression,
+        grouping::Grouping,
+        literal::Literal,
+        print::Print,
+        stmt::{self, Stmt},
+        unary::Unary,
+        var::Var,
+        variable::Variable,
     },
     scanner::{token::Object, token_type::TokenType},
     utils::error::{Error, RuntimeError},
@@ -20,9 +31,7 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new(environment: Environment) -> Self {
-        Self {
-            environment
-        }
+        Self { environment }
     }
 
     pub fn interpret(&mut self, statements: Vec<Box<dyn Stmt>>) {
@@ -36,7 +45,11 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(&mut self, statements: &Vec<Box<dyn Stmt>>, environment: Environment) -> Result<(), Error> {
+    fn execute_block(
+        &mut self,
+        statements: &Vec<Box<dyn Stmt>>,
+        environment: Environment,
+    ) -> Result<(), Error> {
         let previous = self.environment.clone();
         self.environment = environment;
         for statement in statements {
@@ -193,7 +206,8 @@ impl expr::Visitor<Object> for Interpreter {
 
 impl stmt::Visitor for Interpreter {
     fn visit_block_stmt(&mut self, stmt: &Block) -> Result<(), Error> {
-        let inner_environment = Environment::new(Some(RefCell::new(self.environment.clone()).into()));
+        let inner_environment =
+            Environment::new(Some(RefCell::new(self.environment.clone()).into()));
         self.execute_block(&stmt.statements, inner_environment)
     }
 
@@ -216,7 +230,8 @@ impl stmt::Visitor for Interpreter {
             Object::Nil
         };
 
-        self.environment.define(stmt.name().lexeme().to_owned(), value);
+        self.environment
+            .define(stmt.name().lexeme().to_owned(), value);
         Ok(())
     }
 }

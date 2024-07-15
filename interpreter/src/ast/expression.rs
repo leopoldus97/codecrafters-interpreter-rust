@@ -23,7 +23,7 @@ impl Stmt for Expression {
     fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
         visitor.visit_expression_stmt(self)
     }
-    
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
