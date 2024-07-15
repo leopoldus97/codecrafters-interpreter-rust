@@ -6,16 +6,7 @@ use error::runtime_error;
 
 use crate::{
     ast::{
-        binary::Binary,
-        expr::{self, Expr},
-        expression::Expression,
-        grouping::Grouping,
-        literal::Literal,
-        print::Print,
-        stmt::{self, Stmt},
-        unary::Unary,
-        var::Var,
-        variable::Variable,
+        assign::Assign, binary::Binary, block::Block, expr::{self, Expr}, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt::{self, Stmt}, unary::Unary, var::Var, variable::Variable
     },
     scanner::{token::Object, token_type::TokenType},
     utils::error::{Error, RuntimeError},
@@ -41,6 +32,11 @@ impl Interpreter {
 }
 
 impl expr::Visitor<Object> for Interpreter {
+    fn visit_assign_expr(&mut self, expr: &Assign<Object>) -> Result<Object, Error> {
+        let value = evaluate(expr.value(), self)?;
+        Ok(value)
+    }
+
     fn visit_binary_expr(&mut self, expr: &Binary<Object>) -> Result<Object, Error> {
         let left = evaluate(expr.left(), self)?;
         let right = evaluate(expr.right(), self)?;
@@ -177,6 +173,10 @@ impl expr::Visitor<Object> for Interpreter {
 }
 
 impl stmt::Visitor for Interpreter {
+    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<(), Error> {
+        self.execute_block(&stmt.statements, inner_environment)
+    }
+
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<(), Error> {
         evaluate(stmt.expression(), self)?;
         Ok(())

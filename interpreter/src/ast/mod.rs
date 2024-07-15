@@ -1,4 +1,6 @@
+pub mod assign;
 pub mod binary;
+pub mod block;
 pub mod expression;
 pub mod grouping;
 pub mod literal;
@@ -21,13 +23,14 @@ pub mod expr {
 
     use crate::utils::error::Error;
 
-    use super::{binary, grouping, literal, unary};
+    use super::{assign, binary, grouping, literal, unary};
 
     pub trait Expr<R> {
         fn accept(&self, visitor: &mut dyn Visitor<R>) -> Result<R, Error>;
     }
 
     pub trait Visitor<R> {
+        fn visit_assign_expr(&mut self, expr: &assign::Assign<R>) -> Result<R, Error>;
         fn visit_binary_expr(&mut self, expr: &binary::Binary<R>) -> Result<R, Error>;
         fn visit_grouping_expr(&mut self, expr: &grouping::Grouping<R>) -> Result<R, Error>;
         fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<R, Error>;
@@ -42,9 +45,11 @@ pub mod stmt {
     //                | statement ;
     // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     // statement      → exprStmt
-    //                | printStmt ;
+    //                | printStmt 
+    //                | block ;
     // exprStmt       → expression ";" ;
     // printStmt      → "print" expression ";" ;
+    // block          → "{" declaration* "}" ;
 
     use crate::utils::error::Error;
 
@@ -55,6 +60,7 @@ pub mod stmt {
     }
 
     pub trait Visitor {
+        fn visit_block_stmt(&mut self, stmt: &super::block::Block) -> Result<(), Error>;
         fn visit_expression_stmt(&mut self, stmt: &expression::Expression) -> Result<(), Error>;
         fn visit_print_stmt(&mut self, stmt: &print::Print) -> Result<(), Error>;
         fn visit_var_stmt(&mut self, stmt: &super::var::Var) -> Result<(), Error>;

@@ -34,6 +34,11 @@ impl AstPrinter {
 }
 
 impl expr::Visitor<String> for AstPrinter {
+    fn visit_assign_expr(&mut self, expr: &super::assign::Assign<String>) -> Result<String, Error> {
+        let exprs = [expr.value()];
+        self.parenthesize("=", &exprs)
+    }
+
     fn visit_binary_expr(&mut self, expr: &binary::Binary<String>) -> Result<String, Error> {
         let exprs = [expr.left(), expr.right()];
         self.parenthesize(expr.operator().lexeme(), &exprs)

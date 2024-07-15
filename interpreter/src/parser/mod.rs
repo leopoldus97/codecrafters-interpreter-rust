@@ -2,8 +2,7 @@ mod error;
 
 use crate::{
     ast::{
-        binary::Binary, expr::Expr, expression::Expression, grouping::Grouping, literal::Literal,
-        print::Print, stmt::Stmt, unary::Unary, var::Var, variable::Variable,
+        assign::Assign, binary::Binary, block::Block, expr::Expr, expression::Expression, grouping::Grouping, literal::Literal, print::Print, stmt::Stmt, unary::Unary, var::Var, variable::Variable
     },
     scanner::{
         token::{Object, Token},
@@ -128,6 +127,8 @@ impl Parser {
     fn statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
         if self.match_token_types(&[TokenType::Print]) {
             self.print_statement()
+        } else if self.match_token_types(&[TokenType::LeftBrace]) {
+            Ok(Box::new(Block::new(self.block())))
         } else {
             self.expression_statement()
         }
@@ -159,8 +160,41 @@ impl Parser {
         Ok(Box::new(Expression::new(expr)))
     }
 
+    fn block(&mut self) -> Vec<Box<dyn Stmt>> {
+        let mut statements: Vec<Box<dyn Stmt>> = Vec::new();
+
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            let declaration = self.declaration();
+            if let Some(declaration) = declaration {
+                statements.push(declaration);
+            }
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after block.").unwrap();
+        statements
+    }
+
     fn expression<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        self.equality::<R>()
+        self.assignment::<R>()
+    }
+
+    fn assignment<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
+        let expr = self.equality::<R>()?;
+
+        if self.match_token_types(&[TokenType::Equal]) {
+            let equals = self.previous();
+            let value = self.assignment::<R>()?;
+
+            if let Some(variable) = expr.as_any().downcast_ref::<Variable>() {
+                let name = variable.name().to_owned();
+                return Ok(Box::new(Assign::new(name, value)));
+            }
+
+            let error = self.error(&equals, "Invalid assignment target.");
+            return Err(error);
+        }
+
+        Ok(expr)
     }
 
     fn equality<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
