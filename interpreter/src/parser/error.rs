@@ -1,9 +1,7 @@
 use crate::{
     scanner::{token::Token, token_type::TokenType},
-    utils::report,
+    utils::report::report,
 };
-
-pub(super) struct ParseError {}
 
 pub(super) fn error(token: &Token, message: String) {
     if token.token_type() == &TokenType::Eof {

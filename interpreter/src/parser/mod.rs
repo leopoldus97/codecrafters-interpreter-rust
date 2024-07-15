@@ -1,24 +1,17 @@
 mod error;
 
-use error::ParseError;
-
 use crate::{
-    ast::{binary::Binary, grouping::Grouping, literal::Literal, unary::Unary, Expr},
+    ast::{
+        assign::Assign, binary::Binary, block::Block, expr::Expr, expression::Expression,
+        grouping::Grouping, literal::Literal, print::Print, stmt::Stmt, unary::Unary, var::Var,
+        variable::Variable,
+    },
     scanner::{
         token::{Object, Token},
         token_type::TokenType,
     },
+    utils::error::{Error, ParseError},
 };
-
-// expression     → equality ;
-// equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-// comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-// term           → factor ( ( "-" | "+" ) factor )* ;
-// factor         → unary ( ( "/" | "*" ) unary )* ;
-// unary          → ( "!" | "-" ) unary
-//                | primary ;
-// primary        → NUMBER | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" ;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -30,11 +23,15 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse<R: 'static, E: 'static>(&mut self) -> Option<Box<dyn Expr<R, E>>> {
-        match self.expression() {
-            Ok(expr) => Some(expr),
-            Err(_) => None,
+    pub fn parse<R: 'static>(&mut self) -> Result<Vec<Box<dyn Stmt>>, Error> {
+        let mut statements: Vec<Box<dyn Stmt>> = Vec::new();
+        while !self.is_at_end() {
+            let declaration = self.declaration();
+            if let Some(declaration) = declaration {
+                statements.push(declaration);
+            }
         }
+        Ok(statements)
     }
 
     fn match_token_types(&mut self, types: &[TokenType]) -> bool {
@@ -89,7 +86,6 @@ impl Parser {
         ParseError {}
     }
 
-    #[allow(dead_code)]
     fn synchronize(&mut self) {
         self.advance();
 
@@ -114,24 +110,110 @@ impl Parser {
 }
 
 impl Parser {
-    fn expression<R: 'static, E: 'static>(&mut self) -> Result<Box<dyn Expr<R, E>>, ParseError> {
-        self.equality::<R, E>()
+    fn declaration(&mut self) -> Option<Box<dyn Stmt>> {
+        let result = if self.match_token_types(&[TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+
+        match result {
+            Ok(stmt) => Some(stmt),
+            Err(_) => {
+                self.synchronize();
+                None
+            }
+        }
     }
 
-    fn equality<R: 'static, E: 'static>(&mut self) -> Result<Box<dyn Expr<R, E>>, ParseError> {
-        let mut expr = self.comparison::<R, E>()?;
+    fn statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
+        if self.match_token_types(&[TokenType::Print]) {
+            self.print_statement()
+        } else if self.match_token_types(&[TokenType::LeftBrace]) {
+            Ok(Box::new(Block::new(self.block())))
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
+        let value = self.expression::<Object>()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        Ok(Box::new(Print::new(value)))
+    }
+
+    fn var_declaration(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
+        let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
+        let initializer = if self.match_token_types(&[TokenType::Equal]) {
+            Some(self.expression::<Object>()?)
+        } else {
+            None
+        };
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
+        Ok(Box::new(Var::new(name, initializer)))
+    }
+
+    fn expression_statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
+        let expr = self.expression::<Object>()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        Ok(Box::new(Expression::new(expr)))
+    }
+
+    fn block(&mut self) -> Vec<Box<dyn Stmt>> {
+        let mut statements: Vec<Box<dyn Stmt>> = Vec::new();
+
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            let declaration = self.declaration();
+            if let Some(declaration) = declaration {
+                statements.push(declaration);
+            }
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after block.")
+            .unwrap();
+        statements
+    }
+
+    fn expression<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
+        self.assignment::<R>()
+    }
+
+    fn assignment<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
+        let expr = self.equality::<R>()?;
+
+        if self.match_token_types(&[TokenType::Equal]) {
+            let equals = self.previous();
+            let value = self.assignment::<R>()?;
+
+            if let Some(variable) = expr.as_any().downcast_ref::<Variable>() {
+                let name = variable.name().to_owned();
+                return Ok(Box::new(Assign::new(name, value)));
+            }
+
+            let error = self.error(&equals, "Invalid assignment target.");
+            return Err(error);
+        }
+
+        Ok(expr)
+    }
+
+    fn equality<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
+        let mut expr = self.comparison::<R>()?;
 
         while self.match_token_types(&[TokenType::BangEqual, TokenType::EqualEqual]) {
             let operator = self.previous();
-            let right = self.comparison::<R, E>()?;
+            let right = self.comparison::<R>()?;
             expr = Box::new(Binary::new(expr, operator, right));
         }
 
         Ok(expr)
     }
 
-    fn comparison<R: 'static, E: 'static>(&mut self) -> Result<Box<dyn Expr<R, E>>, ParseError> {
-        let mut expr = self.term::<R, E>()?;
+    fn comparison<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
+        let mut expr = self.term::<R>()?;
 
         while self.match_token_types(&[
             TokenType::Greater,
@@ -140,48 +222,48 @@ impl Parser {
             TokenType::LessEqual,
         ]) {
             let operator = self.previous();
-            let right = self.term::<R, E>()?;
+            let right = self.term::<R>()?;
             expr = Box::new(Binary::new(expr, operator, right));
         }
 
         Ok(expr)
     }
 
-    fn term<R: 'static, E: 'static>(&mut self) -> Result<Box<dyn Expr<R, E>>, ParseError> {
-        let mut expr = self.factor::<R, E>()?;
+    fn term<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
+        let mut expr = self.factor::<R>()?;
 
         while self.match_token_types(&[TokenType::Minus, TokenType::Plus]) {
             let operator = self.previous();
-            let right = self.factor::<R, E>()?;
+            let right = self.factor::<R>()?;
             expr = Box::new(Binary::new(expr, operator, right));
         }
 
         Ok(expr)
     }
 
-    fn factor<R: 'static, E: 'static>(&mut self) -> Result<Box<dyn Expr<R, E>>, ParseError> {
-        let mut expr = self.unary::<R, E>()?;
+    fn factor<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
+        let mut expr = self.unary::<R>()?;
 
         while self.match_token_types(&[TokenType::Slash, TokenType::Star]) {
             let operator = self.previous();
-            let right = self.unary::<R, E>()?;
+            let right = self.unary::<R>()?;
             expr = Box::new(Binary::new(expr, operator, right));
         }
 
         Ok(expr)
     }
 
-    fn unary<R: 'static, E: 'static>(&mut self) -> Result<Box<dyn Expr<R, E>>, ParseError> {
+    fn unary<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         if self.match_token_types(&[TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous();
-            let right = self.unary::<R, E>()?;
+            let right = self.unary::<R>()?;
             Ok(Box::new(Unary::new(operator, right)))
         } else {
             self.primary()
         }
     }
 
-    fn primary<R: 'static, E: 'static>(&mut self) -> Result<Box<dyn Expr<R, E>>, ParseError> {
+    fn primary<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         if self.match_token_types(&[TokenType::False]) {
             Ok(Box::new(Literal::new(Object::Bool(false))))
         } else if self.match_token_types(&[TokenType::True]) {
@@ -190,8 +272,10 @@ impl Parser {
             Ok(Box::new(Literal::new(Object::Nil)))
         } else if self.match_token_types(&[TokenType::Number, TokenType::String]) {
             Ok(Box::new(Literal::new(self.previous().literal().clone())))
+        } else if self.match_token_types(&[TokenType::Identifier]) {
+            Ok(Box::new(Variable::new(self.previous().to_owned())))
         } else if self.match_token_types(&[TokenType::LeftParen]) {
-            let expr = self.expression::<R, E>()?;
+            let expr = self.expression::<R>()?;
             self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
             Ok(Box::new(Grouping::new(expr)))
         } else {

@@ -1,6 +1,6 @@
 use super::token_type::TokenType;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Token {
     token_type: TokenType,
     lexeme: String,
@@ -35,13 +35,24 @@ impl Token {
     }
 }
 
+impl Default for Token {
+    fn default() -> Self {
+        Self {
+            token_type: TokenType::Eof,
+            lexeme: String::new(),
+            literal: Object::Nil,
+            line: 0,
+        }
+    }
+}
+
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal)
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Object {
     Str(String),
     Num(f64),

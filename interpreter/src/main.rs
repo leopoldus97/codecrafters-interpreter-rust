@@ -6,7 +6,11 @@ use std::{
 };
 
 use lox_rs::{
-    interpreter::Interpreter, parser::Parser, scanner::Scanner, HAD_ERROR, HAD_RUNTIME_ERROR,
+    ast::stmt::Stmt,
+    interpreter::{environment::Environment, Interpreter},
+    parser::Parser,
+    scanner::Scanner,
+    HAD_ERROR, HAD_RUNTIME_ERROR,
 };
 
 fn main() {
@@ -28,7 +32,9 @@ fn run_file(file_path: &String) {
         process::exit(74);
     });
 
-    let mut interpreter = Interpreter::new();
+    let environment = Environment::new(None);
+
+    let mut interpreter = Interpreter::new(environment);
 
     run(file_contents, &mut interpreter);
 
@@ -53,7 +59,9 @@ fn run_prompt() {
             break;
         }
 
-        let mut interpreter = Interpreter::new();
+        let environment = Environment::new(None);
+
+        let mut interpreter = Interpreter::new(environment);
 
         run(line, &mut interpreter);
 
@@ -66,11 +74,11 @@ fn run(source: String, interpreter: &mut Interpreter) {
     let tokens = scanner.scan_tokens();
 
     let mut parser = Parser::new(tokens.to_owned());
-    let expression = parser.parse();
+    let statements = parser.parse::<Box<dyn Stmt>>().unwrap();
 
     if HAD_ERROR.load(Ordering::SeqCst) {
         return;
     }
 
-    interpreter.interpret(expression.unwrap());
+    interpreter.interpret(statements);
 }
