@@ -1,7 +1,9 @@
+pub mod environment;
 mod error;
 
-use std::ops::Neg;
+use std::{cell::RefCell, ops::Neg};
 
+use environment::Environment;
 use error::runtime_error;
 
 use crate::{
@@ -12,11 +14,15 @@ use crate::{
     utils::error::{Error, RuntimeError},
 };
 
-pub struct Interpreter {}
+pub struct Interpreter {
+    environment: Environment,
+}
 
 impl Interpreter {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(environment: Environment) -> Self {
+        Self {
+            environment
+        }
     }
 
     pub fn interpret(&mut self, statements: Vec<Box<dyn Stmt>>) {
@@ -29,11 +35,25 @@ impl Interpreter {
             }
         }
     }
+
+    fn execute_block(&mut self, statements: &Vec<Box<dyn Stmt>>, environment: Environment) -> Result<(), Error> {
+        let previous = self.environment.clone();
+        self.environment = environment;
+        for statement in statements {
+            if let Err(e) = execute(statement.as_ref(), self) {
+                self.environment = previous;
+                return Err(e);
+            }
+        }
+        self.environment = previous;
+        Ok(())
+    }
 }
 
 impl expr::Visitor<Object> for Interpreter {
     fn visit_assign_expr(&mut self, expr: &Assign<Object>) -> Result<Object, Error> {
         let value = evaluate(expr.value(), self)?;
+        self.environment.assign(expr.name(), value.clone())?;
         Ok(value)
     }
 
@@ -166,14 +186,14 @@ impl expr::Visitor<Object> for Interpreter {
         result
     }
 
-    #[allow(unused_variables)]
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
-        Ok(Object::Nil)
+        self.environment.get(expr.name()).map(|v| v.to_owned())
     }
 }
 
 impl stmt::Visitor for Interpreter {
     fn visit_block_stmt(&mut self, stmt: &Block) -> Result<(), Error> {
+        let inner_environment = Environment::new(Some(RefCell::new(self.environment.clone()).into()));
         self.execute_block(&stmt.statements, inner_environment)
     }
 
@@ -196,13 +216,15 @@ impl stmt::Visitor for Interpreter {
             Object::Nil
         };
 
+        self.environment.define(stmt.name().lexeme().to_owned(), value);
         Ok(())
     }
 }
 
 impl Default for Interpreter {
     fn default() -> Self {
-        Self::new()
+        let environment = Environment::new(None);
+        Self::new(environment)
     }
 }
 
