@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Get the name of the current branch
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+# Get the name of the remote
+remote=$(git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD))
+
+# Split remote name into remote and branch
+IFS='/' read -ra remote_info <<< "$remote"
+remote_name="${remote_info[0]}"
+remote_branch="${remote_info[1]}"
+
+# Check for changed files that are relevant to Rust development
+changed_files=$(git diff --name-only "$remote_name/$remote_branch" "$current_branch" | grep -E '\.(rs|toml)$')
+
+# If no relevant Rust files have changed, skip tests
+if [ -z "$changed_files" ]; then
+  echo "No Rust source or Cargo files have changed. Skipping tests."
+  exit 0
+else
+  echo "Rust source or Cargo files have changed. Running tests."
+  # Run tests with Cargo
+  cargo clippy --all-targets --all-features
+  cargo test
+  cargo fmt -- --check
+fi
+
+# If the cargo test command fails, exit with non-zero to stop the push
+if [ $? -ne 0 ]; then
+  echo "Tests failed. Aborting push."
+  exit 1
+fi

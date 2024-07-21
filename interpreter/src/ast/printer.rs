@@ -1,9 +1,9 @@
 use crate::utils::error::Error;
 
 use super::{
-    binary,
+    assign, binary,
     expr::{self, Expr},
-    grouping, literal, unary,
+    grouping, literal, logical, unary, variable,
 };
 
 pub struct AstPrinter {}
@@ -34,7 +34,7 @@ impl AstPrinter {
 }
 
 impl expr::Visitor<String> for AstPrinter {
-    fn visit_assign_expr(&mut self, expr: &super::assign::Assign<String>) -> Result<String, Error> {
+    fn visit_assign_expr(&mut self, expr: &assign::Assign<String>) -> Result<String, Error> {
         let exprs = [expr.value()];
         self.parenthesize("=", &exprs)
     }
@@ -53,12 +53,17 @@ impl expr::Visitor<String> for AstPrinter {
         Ok(expr.value().to_string())
     }
 
+    fn visit_logical_expr(&mut self, expr: &logical::Logical<String>) -> Result<String, Error> {
+        let exprs = [expr.left(), expr.right()];
+        self.parenthesize(expr.operator().lexeme(), &exprs)
+    }
+
     fn visit_unary_expr(&mut self, expr: &unary::Unary<String>) -> Result<String, Error> {
         let exprs = [expr.right()];
         self.parenthesize(expr.operator().lexeme(), &exprs)
     }
 
-    fn visit_variable_expr(&mut self, expr: &super::variable::Variable) -> Result<String, Error> {
+    fn visit_variable_expr(&mut self, expr: &variable::Variable) -> Result<String, Error> {
         Ok(expr.name().lexeme().to_string())
     }
 }
