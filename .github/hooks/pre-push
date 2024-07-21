@@ -1,0 +1,4 @@
+#!/bin/sh
+cargo clippy --all-targets --all-features
+cargo test
+cargo fmt -- --check
