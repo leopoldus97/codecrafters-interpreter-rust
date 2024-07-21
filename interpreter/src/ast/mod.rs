@@ -3,15 +3,22 @@ pub mod binary;
 pub mod block;
 pub mod expression;
 pub mod grouping;
+pub mod r#if;
 pub mod literal;
+pub mod logical;
 pub mod print;
 pub mod printer;
 pub mod unary;
 pub mod var;
 pub mod variable;
+pub mod r#while;
 
 pub mod expr {
-    // expression     → equality ;
+    // expression     → assignment ;
+    // assignment     → IDENTIFIER "=" assignment
+    //                | logic_or ;
+    // logic_or       → logic_and ( "or" logic_and )* ;
+    // logic_and      → equality ( "and" equality )* ;
     // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     // term           → factor ( ( "-" | "+" ) factor )* ;
@@ -25,7 +32,7 @@ pub mod expr {
 
     use crate::utils::error::Error;
 
-    use super::{assign, binary, grouping, literal, unary};
+    use super::{assign, binary, grouping, literal, logical, unary, variable};
 
     pub trait Expr<R: 'static>: Any {
         fn accept(&self, visitor: &mut dyn Visitor<R>) -> Result<R, Error>;
@@ -37,8 +44,9 @@ pub mod expr {
         fn visit_binary_expr(&mut self, expr: &binary::Binary<R>) -> Result<R, Error>;
         fn visit_grouping_expr(&mut self, expr: &grouping::Grouping<R>) -> Result<R, Error>;
         fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<R, Error>;
+        fn visit_logical_expr(&mut self, expr: &logical::Logical<R>) -> Result<R, Error>;
         fn visit_unary_expr(&mut self, expr: &unary::Unary<R>) -> Result<R, Error>;
-        fn visit_variable_expr(&mut self, expr: &super::variable::Variable) -> Result<R, Error>;
+        fn visit_variable_expr(&mut self, expr: &variable::Variable) -> Result<R, Error>;
     }
 }
 
@@ -48,9 +56,18 @@ pub mod stmt {
     //                | statement ;
     // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     // statement      → exprStmt
+    //                | forStmt
+    //                | ifStmt
     //                | printStmt
+    //                | whileStmt
     //                | block ;
+    // forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+    //                 expression? ";"
+    //                 expression? ")" statement ;
+    // whileStmt      → "while" "(" expression ")" statement ;
     // exprStmt       → expression ";" ;
+    // ifStmt         → "if" "(" expression ")" statement
+    //                | ( "else" statement )? ;
     // printStmt      → "print" expression ";" ;
     // block          → "{" declaration* "}" ;
 
@@ -58,7 +75,7 @@ pub mod stmt {
 
     use crate::utils::error::Error;
 
-    use super::{expression, print};
+    use super::{block, expression, print, r#if, r#while, var};
 
     pub trait Stmt: Any {
         fn accept(&self, visitor: &mut dyn Visitor) -> Result<(), Error>;
@@ -66,9 +83,11 @@ pub mod stmt {
     }
 
     pub trait Visitor {
-        fn visit_block_stmt(&mut self, stmt: &super::block::Block) -> Result<(), Error>;
+        fn visit_block_stmt(&mut self, stmt: &block::Block) -> Result<(), Error>;
         fn visit_expression_stmt(&mut self, stmt: &expression::Expression) -> Result<(), Error>;
+        fn visit_if_stmt(&mut self, stmt: &r#if::If) -> Result<(), Error>;
         fn visit_print_stmt(&mut self, stmt: &print::Print) -> Result<(), Error>;
-        fn visit_var_stmt(&mut self, stmt: &super::var::Var) -> Result<(), Error>;
+        fn visit_var_stmt(&mut self, stmt: &var::Var) -> Result<(), Error>;
+        fn visit_while_stmt(&mut self, stmt: &r#while::While) -> Result<(), Error>;
     }
 }
