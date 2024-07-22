@@ -1,3 +1,5 @@
+use crate::interpreter::callable::Callable;
+
 use super::token_type::TokenType;
 
 #[derive(Clone, PartialEq)]
@@ -57,6 +59,7 @@ pub enum Object {
     Str(String),
     Num(f64),
     Bool(bool),
+    Callable(Box<dyn Callable>),
     Nil,
 }
 
@@ -66,6 +69,7 @@ impl std::fmt::Display for Object {
             Object::Str(s) => write!(f, "{}", s),
             Object::Num(n) => write!(f, "{}", n),
             Object::Bool(b) => write!(f, "{}", b),
+            Object::Callable(c) => write!(f, "{}", c),
             Object::Nil => write!(f, "nil"),
         }
     }
