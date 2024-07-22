@@ -1,8 +1,10 @@
+pub mod callable;
 pub mod environment;
 mod error;
 
 use std::{cell::RefCell, ops::Neg, rc::Rc};
 
+use callable::clock::ClockFn;
 use environment::Environment;
 use error::runtime_error;
 
@@ -21,14 +23,26 @@ use crate::{
     utils::error::{Error, RuntimeError},
 };
 
+#[derive(Clone, PartialEq)]
 pub struct Interpreter {
     environment: Rc<RefCell<Environment>>,
+    globals: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
-    pub fn new(environment: Environment) -> Self {
-        let environment = Rc::new(RefCell::new(environment));
-        Self { environment }
+    pub fn new() -> Self {
+        let globals = Rc::new(RefCell::new(Environment::new(None)));
+        let environment = Rc::clone(&globals);
+
+        globals.borrow_mut().define(
+            String::from("clock"),
+            Object::Callable(Box::new(ClockFn::new())),
+        );
+
+        Self {
+            environment,
+            globals,
+        }
     }
 
     pub fn interpret(&mut self, statements: Vec<Box<dyn Stmt>>) {
@@ -308,8 +322,7 @@ impl stmt::Visitor for Interpreter {
 
 impl Default for Interpreter {
     fn default() -> Self {
-        let environment = Environment::new(None);
-        Self::new(environment)
+        Self::new()
     }
 }
 

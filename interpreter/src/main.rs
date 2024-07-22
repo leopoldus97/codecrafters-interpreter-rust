@@ -32,9 +32,7 @@ fn run_file(file_path: &String) {
         process::exit(74);
     });
 
-    let environment = Environment::new(None);
-
-    let mut interpreter = Interpreter::new(environment);
+    let mut interpreter = Interpreter::new();
 
     run(file_contents, &mut interpreter);
 
@@ -59,9 +57,7 @@ fn run_prompt() {
             break;
         }
 
-        let environment = Environment::new(None);
-
-        let mut interpreter = Interpreter::new(environment);
+        let mut interpreter = Interpreter::new();
 
         run(line, &mut interpreter);
 
