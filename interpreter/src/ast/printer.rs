@@ -1,10 +1,6 @@
 use crate::utils::error::Error;
 
-use super::{
-    assign, binary,
-    expr::{self, Expr},
-    grouping, literal, logical, unary, variable,
-};
+use super::expr::{self, assign, binary, call, grouping, literal, logical, unary, variable, Expr};
 
 pub struct AstPrinter {}
 

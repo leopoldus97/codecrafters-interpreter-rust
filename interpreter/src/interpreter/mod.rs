@@ -7,25 +7,7 @@ use environment::Environment;
 use error::runtime_error;
 
 use crate::{
-    ast::{
-        assign::Assign,
-        binary::Binary,
-        block::Block,
-        expr::{self, Expr},
-        expression::Expression,
-        grouping::Grouping,
-        literal::Literal,
-        logical::Logical,
-        print::Print,
-        r#if::If,
-        r#while::While,
-        stmt::{self, Stmt},
-        unary::Unary,
-        var::Var,
-        variable::Variable,
-    },
-    scanner::{token::Object, token_type::TokenType},
-    utils::error::{Error, RuntimeError},
+    ast::{expr::{self, assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal, logical::Logical, unary::Unary, variable::Variable, Expr}, stmt::{self, block::Block, expression::Expression, function::Function, r#if::If, print::Print, var::Var, r#while::While, Stmt}}, scanner::{token::Object, token_type::TokenType}, utils::error::{Error, RuntimeError}
 };
 
 pub struct Interpreter {

@@ -1,6 +1,6 @@
 use crate::{scanner::token::Object, utils::error::Error};
 
-use super::expr::{self, Expr};
+use super::Expr;
 
 pub struct Literal {
     pub value: Object,
@@ -17,7 +17,7 @@ impl Literal {
 }
 
 impl<R: 'static> Expr<R> for Literal {
-    fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor<R>) -> Result<R, Error> {
         visitor.visit_literal_expr(self)
     }
 

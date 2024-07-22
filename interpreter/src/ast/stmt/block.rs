@@ -1,6 +1,6 @@
 use crate::utils::error::Error;
 
-use super::stmt::{self, Stmt};
+use super::Stmt;
 
 pub struct Block {
     pub statements: Vec<Box<dyn Stmt>>,
@@ -17,7 +17,7 @@ impl Block {
 }
 
 impl Stmt for Block {
-    fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
         visitor.visit_block_stmt(self)
     }
 
