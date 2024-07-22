@@ -40,6 +40,10 @@ impl expr::Visitor<String> for AstPrinter {
         self.parenthesize(expr.operator().lexeme(), &exprs)
     }
 
+    fn visit_call_expr(&mut self, _expr: &call::Call<String>) -> Result<String, Error> {
+        todo!()
+    }
+
     fn visit_grouping_expr(&mut self, expr: &grouping::Grouping<String>) -> Result<String, Error> {
         let exprs = [expr.expression()];
         self.parenthesize("group", &exprs)

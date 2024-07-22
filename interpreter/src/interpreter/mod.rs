@@ -7,7 +7,18 @@ use environment::Environment;
 use error::runtime_error;
 
 use crate::{
-    ast::{expr::{self, assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal, logical::Logical, unary::Unary, variable::Variable, Expr}, stmt::{self, block::Block, expression::Expression, function::Function, r#if::If, print::Print, var::Var, r#while::While, Stmt}}, scanner::{token::Object, token_type::TokenType}, utils::error::{Error, RuntimeError}
+    ast::{
+        expr::{
+            self, assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal,
+            logical::Logical, unary::Unary, variable::Variable, Expr,
+        },
+        stmt::{
+            self, block::Block, expression::Expression, function::Function, print::Print, r#if::If,
+            r#while::While, var::Var, Stmt,
+        },
+    },
+    scanner::{token::Object, token_type::TokenType},
+    utils::error::{Error, RuntimeError},
 };
 
 pub struct Interpreter {
@@ -157,6 +168,37 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
+    fn visit_call_expr(&mut self, expr: &Call<Object>) -> Result<Object, Error> {
+        let callee = evaluate(expr.callee(), self)?;
+
+        let arguments = expr
+            .arguments()
+            .iter()
+            .map(|arg| evaluate(arg.as_ref(), self))
+            .collect::<Result<Vec<Object>, Error>>()?;
+
+        if let Object::Callable(callee) = callee {
+            if arguments.len() != callee.arity() {
+                return Err(RuntimeError::new(
+                    format!(
+                        "Expected {} arguments but got {}.",
+                        callee.arity(),
+                        arguments.len()
+                    ),
+                    expr.paren().to_owned(),
+                )
+                .into());
+            }
+            Ok(callee.call(self, arguments))
+        } else {
+            Err(RuntimeError::new(
+                String::from("Can only call functions and classes"),
+                expr.paren().to_owned(),
+            )
+            .into())
+        }
+    }
+
     fn visit_grouping_expr(&mut self, expr: &Grouping<Object>) -> Result<Object, Error> {
         evaluate(expr.expression(), self)
     }
@@ -219,6 +261,10 @@ impl stmt::Visitor for Interpreter {
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<(), Error> {
         evaluate(stmt.expression(), self)?;
         Ok(())
+    }
+
+    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<(), Error> {
+        todo!()
     }
 
     fn visit_if_stmt(&mut self, stmt: &If) -> Result<(), Error> {
