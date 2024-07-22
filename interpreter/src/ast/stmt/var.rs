@@ -1,5 +1,7 @@
 use crate::{
-    ast::expr::Expr, scanner::token::{Object, Token}, utils::error::Error
+    ast::expr::Expr,
+    scanner::token::{Object, Token},
+    utils::error::Error,
 };
 
 use super::Stmt;
