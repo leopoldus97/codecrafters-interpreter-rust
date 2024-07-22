@@ -5,7 +5,7 @@ use crate::{
     utils::error::{Error, RuntimeError},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq)]
 pub struct Environment {
     pub values: HashMap<String, Object>,
     pub enclosing: Option<Rc<RefCell<Environment>>>,

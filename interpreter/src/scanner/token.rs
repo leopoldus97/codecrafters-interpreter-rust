@@ -1,6 +1,6 @@
 use super::token_type::TokenType;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq)]
 pub struct Token {
     token_type: TokenType,
     lexeme: String,

@@ -1,6 +1,5 @@
 use crate::scanner::token::Token;
 
-#[derive(Debug)]
 pub enum Error {
     ParseError(ParseError),
     RuntimeError(RuntimeError),
@@ -44,7 +43,6 @@ impl Default for ParseError {
     }
 }
 
-#[derive(Debug)]
 pub struct RuntimeError {
     message: String,
     token: Token,
