@@ -278,7 +278,12 @@ impl stmt::Visitor for Interpreter {
     }
 
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<(), Error> {
-        todo!()
+        let function = callable::Function::new(stmt.clone());
+        let callable = Object::Callable(Box::new(function));
+        self.environment
+            .borrow_mut()
+            .define(stmt.name().lexeme().to_owned(), callable);
+        Ok(())
     }
 
     fn visit_if_stmt(&mut self, stmt: &If) -> Result<(), Error> {
