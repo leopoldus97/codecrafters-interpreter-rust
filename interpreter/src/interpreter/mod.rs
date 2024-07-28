@@ -2,7 +2,7 @@ pub mod callable;
 pub mod environment;
 mod error;
 
-use std::{cell::RefCell, ops::Neg, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, ops::Neg, rc::Rc};
 
 use callable::{clock::ClockFn, Callable, Fun};
 use environment::Environment;
@@ -15,11 +15,10 @@ use crate::{
             logical::Logical, unary::Unary, variable::Variable, Expr,
         },
         stmt::{
-            self, block::Block, expression::Expression, function::Function, print::Print, r#if::If,
-            r#while::While, var::Var, Stmt,
+            self, block::Block, expression::Expression, function::Function, r#if::If, print::Print, var::Var, r#while::While, Stmt
         },
     },
-    scanner::{token::Object, token_type::TokenType},
+    scanner::{token::{Object, Token}, token_type::TokenType},
     utils::error::{Error, Return, RuntimeError},
 };
 
@@ -27,12 +26,14 @@ use crate::{
 pub struct Interpreter {
     environment: Rc<RefCell<Environment>>,
     globals: Rc<RefCell<Environment>>,
+    locals: HashMap<String, u8>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         let globals = Rc::new(RefCell::new(Environment::new(None)));
         let environment = Rc::clone(&globals);
+        let locals = HashMap::new();
 
         globals.borrow_mut().define(
             String::from("clock"),
@@ -42,12 +43,13 @@ impl Interpreter {
         Self {
             environment,
             globals,
+            locals,
         }
     }
 
     pub fn interpret(&mut self, statements: Vec<Box<dyn Stmt>>) {
         for statement in statements {
-            if let Err(e) = execute(statement.as_ref(), self) {
+            if let Err(e) = self.execute(statement.as_ref()) {
                 match e {
                     Error::Runtime(e) => {
                         if let crate::utils::error::Runtime::RuntimeError(error) = e {
@@ -68,7 +70,7 @@ impl Interpreter {
         let previous = Rc::clone(&self.environment);
         self.environment = environment;
         for statement in statements {
-            if let Err(e) = execute(statement.as_ref(), self) {
+            if let Err(e) = self.execute(statement.as_ref()) {
                 self.environment = previous;
                 return Err(e);
             }
@@ -76,20 +78,54 @@ impl Interpreter {
         self.environment = previous;
         Ok(())
     }
+
+    fn evaluate(&mut self, expr: &dyn Expr<Object>) -> Result<Object, Error> {
+        expr.accept(self)
+    }
+
+    fn execute(&mut self, stmt: &dyn Stmt) -> Result<(), Error> {
+        stmt.accept(self)
+    }
+
+    fn resolve(&mut self, expr: &dyn Expr<Object>, depth: u8) -> Result<(), Error> {
+        self.locals.insert(expr, depth);
+        Ok(())
+    }
+
+    fn look_up_variable(&self, name: &Token, expr: &dyn Expr<Object>) -> Result<Object, Error> {
+        if let Some(distance) = self.locals.get(expr) {
+            self.environment
+                .borrow()
+                .get_at(*distance, name)
+        } else {
+            self.globals
+                .borrow()
+                .get(name)
+        }
+    }
 }
 
 impl expr::Visitor<Object> for Interpreter {
     fn visit_assign_expr(&mut self, expr: &Assign<Object>) -> Result<Object, Error> {
-        let value = evaluate(expr.value(), self)?;
-        self.environment
-            .borrow_mut()
-            .assign(expr.name(), value.clone())?;
+        let value = self.evaluate(expr.value())?;
+        
+        let distance = self.locals.get(expr);
+        if let Some(distance) = distance {
+            self.environment
+                .borrow_mut()
+                .assign_at(*distance, expr.name(), value);
+        } else {
+            self.globals
+                .borrow_mut()
+                .assign(expr.name(), value);
+        }
+
         Ok(value)
     }
 
     fn visit_binary_expr(&mut self, expr: &Binary<Object>) -> Result<Object, Error> {
-        let left = evaluate(expr.left(), self)?;
-        let right = evaluate(expr.right(), self)?;
+        let left = self.evaluate(expr.left())?;
+        let right = self.evaluate(expr.right())?;
 
         match expr.operator().token_type() {
             TokenType::Minus => {
@@ -203,12 +239,12 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_call_expr(&mut self, expr: &Call<Object>) -> Result<Object, Error> {
-        let callee = evaluate(expr.callee(), self)?;
+        let callee = self.evaluate(expr.callee())?;
 
         let arguments = expr
             .arguments()
             .iter()
-            .map(|arg| evaluate(arg.as_ref(), self))
+            .map(|arg| self.evaluate(arg.as_ref()))
             .collect::<Result<Vec<Object>, Error>>()?;
 
         if let Object::Callable(callee) = callee {
@@ -238,7 +274,7 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_grouping_expr(&mut self, expr: &Grouping<Object>) -> Result<Object, Error> {
-        evaluate(expr.expression(), self)
+        self.evaluate(expr.expression())
     }
 
     fn visit_literal_expr(&mut self, expr: &Literal) -> Result<Object, Error> {
@@ -246,7 +282,7 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_logical_expr(&mut self, expr: &Logical<Object>) -> Result<Object, Error> {
-        let left = evaluate(expr.left(), self)?;
+        let left = self.evaluate(expr.left())?;
 
         if expr.operator().token_type() == &TokenType::Or {
             if left.is_truthy() {
@@ -256,11 +292,11 @@ impl expr::Visitor<Object> for Interpreter {
             return Ok(left);
         }
 
-        evaluate(expr.right(), self)
+        self.evaluate(expr.right())
     }
 
     fn visit_unary_expr(&mut self, expr: &Unary<Object>) -> Result<Object, Error> {
-        let right = evaluate(expr.right(), self)?;
+        let right = self.evaluate(expr.right())?;
 
         let result = match expr.operator().token_type() {
             TokenType::Minus => {
@@ -284,10 +320,7 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
-        self.environment
-            .borrow()
-            .get(expr.name())
-            .map(|v| v.to_owned())
+        look_up_variable(expr.name(), expr)
     }
 }
 
@@ -299,7 +332,7 @@ impl stmt::Visitor for Interpreter {
     }
 
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<(), Error> {
-        evaluate(stmt.expression(), self)?;
+        self.evaluate(stmt.expression(), self)?;
         Ok(())
     }
 
@@ -313,25 +346,25 @@ impl stmt::Visitor for Interpreter {
     }
 
     fn visit_if_stmt(&mut self, stmt: &If) -> Result<(), Error> {
-        let condition = evaluate(stmt.condition(), self)?;
+        let condition = self.evaluate(stmt.condition(), self)?;
         if condition.is_truthy() {
-            execute(stmt.then_branch(), self)?;
+            self.execute(stmt.then_branch(), self)?;
         } else if let Some(else_branch) = stmt.else_branch() {
-            execute(else_branch, self)?;
+            self.execute(else_branch, self)?;
         }
 
         Ok(())
     }
 
     fn visit_print_stmt(&mut self, stmt: &Print) -> Result<(), Error> {
-        let value = evaluate(stmt.expression(), self)?;
+        let value = self.evaluate(stmt.expression(), self)?;
         println!("{}", value);
         Ok(())
     }
 
     fn visit_return_stmt(&mut self, stmt: &stmt::r#return::Return) -> Result<(), Error> {
         let value = if let Some(value) = stmt.value() {
-            evaluate(value.as_ref(), self)?
+            self.evaluate(value.as_ref(), self)?
         } else {
             Object::Nil
         };
@@ -341,7 +374,7 @@ impl stmt::Visitor for Interpreter {
 
     fn visit_var_stmt(&mut self, stmt: &Var) -> Result<(), Error> {
         let value = if let Some(initializer) = stmt.initializer() {
-            evaluate(initializer.as_ref(), self)?
+            self.evaluate(initializer.as_ref(), self)?
         } else {
             Object::Nil
         };
@@ -353,8 +386,8 @@ impl stmt::Visitor for Interpreter {
     }
 
     fn visit_while_stmt(&mut self, stmt: &While) -> Result<(), Error> {
-        while evaluate(stmt.condition(), self)?.is_truthy() {
-            execute(stmt.body(), self)?;
+        while self.evaluate(stmt.condition(), self)?.is_truthy() {
+            self.execute(stmt.body(), self)?;
         }
 
         Ok(())
@@ -365,14 +398,6 @@ impl Default for Interpreter {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn evaluate(expr: &dyn Expr<Object>, visitor: &mut Interpreter) -> Result<Object, Error> {
-    expr.accept(visitor)
-}
-
-fn execute(stmt: &dyn Stmt, visitor: &mut Interpreter) -> Result<(), Error> {
-    stmt.accept(visitor)
 }
 
 fn is_equal(a: Object, b: Object) -> bool {

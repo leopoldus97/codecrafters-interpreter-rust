@@ -22,14 +22,24 @@ pub mod variable;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" | IDENTIFIER ;
 
-use std::any::Any;
+use std::{any::Any, rc::Rc};
 
-use crate::utils::error::Error;
+use crate::{scanner::token::Object, utils::error::Error};
 
 pub trait Expr<R: 'static>: Any {
     fn accept(&self, visitor: &mut dyn Visitor<R>) -> Result<R, Error>;
     fn as_any(&self) -> &dyn Any;
 }
+
+type ExprKey = Rc<dyn Expr<Object>>;
+
+impl PartialEq for ExprKey {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ExprKey {}
 
 pub trait Visitor<R> {
     fn visit_assign_expr(&mut self, expr: &assign::Assign<R>) -> Result<R, Error>;

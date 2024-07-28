@@ -6,8 +6,7 @@ use std::{
 };
 
 use lox_rs::{
-    ast::stmt::Stmt, interpreter::Interpreter, parser::Parser, scanner::Scanner, HAD_ERROR,
-    HAD_RUNTIME_ERROR,
+    ast::stmt::Stmt, interpreter::Interpreter, parser::Parser, resolver::Resolver, scanner::Scanner, HAD_ERROR, HAD_RUNTIME_ERROR
 };
 
 fn main() {
@@ -68,6 +67,13 @@ fn run(source: String, interpreter: &mut Interpreter) {
 
     let mut parser = Parser::new(tokens.to_owned());
     let statements = parser.parse::<Box<dyn Stmt>>().unwrap();
+
+    if HAD_ERROR.load(Ordering::SeqCst) {
+        return;
+    }
+
+    let mut resolver = Resolver::new(interpreter);
+    resolver.resolve(&statements).unwrap();
 
     if HAD_ERROR.load(Ordering::SeqCst) {
         return;
