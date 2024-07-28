@@ -98,7 +98,10 @@ impl Environment {
     }
 
     fn assign_at(&mut self, distance: usize, name: &Token, value: Object) -> Result<(), Error> {
-        self.ancestor(distance)?.borrow_mut().values.insert(name.lexeme().to_string(), value);
+        self.ancestor(distance)?
+            .borrow_mut()
+            .values
+            .insert(name.lexeme().to_string(), value);
         Ok(())
     }
 }

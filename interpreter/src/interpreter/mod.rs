@@ -15,10 +15,14 @@ use crate::{
             logical::Logical, unary::Unary, variable::Variable, Expr,
         },
         stmt::{
-            self, block::Block, expression::Expression, function::Function, r#if::If, print::Print, var::Var, r#while::While, Stmt
+            self, block::Block, expression::Expression, function::Function, print::Print, r#if::If,
+            r#while::While, var::Var, Stmt,
         },
     },
-    scanner::{token::{Object, Token}, token_type::TokenType},
+    scanner::{
+        token::{Object, Token},
+        token_type::TokenType,
+    },
     utils::error::{Error, Return, RuntimeError},
 };
 
@@ -94,13 +98,9 @@ impl Interpreter {
 
     fn look_up_variable(&self, name: &Token, expr: &dyn Expr<Object>) -> Result<Object, Error> {
         if let Some(distance) = self.locals.get(expr) {
-            self.environment
-                .borrow()
-                .get_at(*distance, name)
+            self.environment.borrow().get_at(*distance, name)
         } else {
-            self.globals
-                .borrow()
-                .get(name)
+            self.globals.borrow().get(name)
         }
     }
 }
@@ -108,16 +108,14 @@ impl Interpreter {
 impl expr::Visitor<Object> for Interpreter {
     fn visit_assign_expr(&mut self, expr: &Assign<Object>) -> Result<Object, Error> {
         let value = self.evaluate(expr.value())?;
-        
+
         let distance = self.locals.get(expr);
         if let Some(distance) = distance {
             self.environment
                 .borrow_mut()
                 .assign_at(*distance, expr.name(), value);
         } else {
-            self.globals
-                .borrow_mut()
-                .assign(expr.name(), value);
+            self.globals.borrow_mut().assign(expr.name(), value);
         }
 
         Ok(value)

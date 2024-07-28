@@ -2,8 +2,14 @@ use std::collections::HashMap;
 
 use crate::{
     ast::{
-        expr::{self, assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal, logical::Logical, unary::Unary, variable::Variable, Expr},
-        stmt::{self, block::Block, expression::Expression, function::Function, r#if::If, print::Print, r#return::Return, var::Var, r#while::While, Stmt},
+        expr::{
+            self, assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal,
+            logical::Logical, unary::Unary, variable::Variable, Expr,
+        },
+        stmt::{
+            self, block::Block, expression::Expression, function::Function, print::Print, r#if::If,
+            r#return::Return, r#while::While, var::Var, Stmt,
+        },
     },
     interpreter::Interpreter,
     scanner::token::{Object, Token},
@@ -25,7 +31,11 @@ pub struct Resolver<'a> {
 impl<'a> Resolver<'a> {
     pub fn new(interpreter: &'a mut Interpreter) -> Self {
         let scopes = vec![];
-        Self { interpreter, scopes, current_function: FunctionType::None }
+        Self {
+            interpreter,
+            scopes,
+            current_function: FunctionType::None,
+        }
     }
 
     pub fn resolve(&mut self, statements: &Vec<Box<dyn Stmt>>) -> Result<(), Error> {
@@ -93,7 +103,7 @@ impl<'a> Resolver<'a> {
         }
         self.resolve(&function.body()).unwrap();
         self.end_scope();
-        
+
         self.current_function = enclosing_function;
     }
 }
@@ -140,7 +150,10 @@ impl<'a> expr::Visitor<Object> for Resolver<'a> {
     }
 
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
-        if !self.scopes.is_empty() && self.scopes.last().is_some() && self.scopes.last().unwrap().get(expr.name().lexeme()) == false {
+        if !self.scopes.is_empty()
+            && self.scopes.last().is_some()
+            && self.scopes.last().unwrap().get(expr.name().lexeme()) == false
+        {
             eprintln!("Cannot read local variable in its own initializer.");
         }
 
@@ -150,10 +163,7 @@ impl<'a> expr::Visitor<Object> for Resolver<'a> {
 }
 
 impl<'a> stmt::Visitor for Resolver<'a> {
-    fn visit_block_stmt(
-        &mut self,
-        stmt: &Block,
-    ) -> Result<(), Error> {
+    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<(), Error> {
         self.begin_scope();
         self.resolve(stmt.statements())?;
         self.end_scope();
@@ -189,7 +199,10 @@ impl<'a> stmt::Visitor for Resolver<'a> {
 
     fn visit_return_stmt(&mut self, stmt: &Return) -> Result<(), Error> {
         if self.current_function == FunctionType::None {
-            eprintln!("{} Cannot return from top-level code.", stmt.keyword().lexeme());
+            eprintln!(
+                "{} Cannot return from top-level code.",
+                stmt.keyword().lexeme()
+            );
         }
 
         if let Some(ref value) = stmt.value() {
@@ -197,7 +210,7 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         }
         Ok(())
     }
-    
+
     fn visit_var_stmt(&mut self, stmt: &Var) -> Result<(), Error> {
         self.declare(stmt.name());
         if let Some(ref initializer) = stmt.initializer() {
