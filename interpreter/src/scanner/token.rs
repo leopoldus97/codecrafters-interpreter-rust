@@ -1,4 +1,4 @@
-use crate::interpreter::callable::Callable;
+use crate::interpreter::callable::Fun;
 
 use super::token_type::TokenType;
 
@@ -54,24 +54,12 @@ impl std::fmt::Display for Token {
     }
 }
 
-impl Clone for Box<dyn Callable> {
-    fn clone(&self) -> Self {
-        self.to_owned()
-    }
-}
-
-impl PartialEq for Box<dyn Callable> {
-    fn eq(&self, other: &Self) -> bool {
-        self.to_string() == other.to_string() && self.arity() == other.arity()
-    }
-}
-
 #[derive(Clone, PartialEq)]
 pub enum Object {
     Str(String),
     Num(f64),
     Bool(bool),
-    Callable(Box<dyn Callable>),
+    Callable(Box<Fun>),
     Nil,
 }
 

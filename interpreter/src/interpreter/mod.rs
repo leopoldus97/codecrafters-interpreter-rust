@@ -4,7 +4,7 @@ mod error;
 
 use std::{cell::RefCell, ops::Neg, rc::Rc};
 
-use callable::clock::ClockFn;
+use callable::{clock::ClockFn, Callable, Fun};
 use environment::Environment;
 use error::runtime_error;
 
@@ -20,7 +20,7 @@ use crate::{
         },
     },
     scanner::{token::Object, token_type::TokenType},
-    utils::error::{Error, RuntimeError},
+    utils::error::{Error, Return, RuntimeError},
 };
 
 #[derive(Clone, PartialEq)]
@@ -36,7 +36,7 @@ impl Interpreter {
 
         globals.borrow_mut().define(
             String::from("clock"),
-            Object::Callable(Box::new(ClockFn::new())),
+            Object::Callable(Box::new(Fun::Clock(ClockFn::new()))),
         );
 
         Self {
@@ -305,7 +305,7 @@ impl stmt::Visitor for Interpreter {
 
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<(), Error> {
         let function = callable::Function::new(stmt.clone(), Rc::clone(&self.environment));
-        let callable = Object::Callable(Box::new(function));
+        let callable = Object::Callable(Box::new(Fun::Function(function)));
         self.environment
             .borrow_mut()
             .define(stmt.name().lexeme().to_owned(), callable);
@@ -336,9 +336,7 @@ impl stmt::Visitor for Interpreter {
             Object::Nil
         };
 
-        Err(Error::Runtime(
-            RuntimeError::new(value.to_string(), stmt.keyword().to_owned()).into(),
-        ))
+        Err(Error::Runtime(Return::new(value).into()))
     }
 
     fn visit_var_stmt(&mut self, stmt: &Var) -> Result<(), Error> {

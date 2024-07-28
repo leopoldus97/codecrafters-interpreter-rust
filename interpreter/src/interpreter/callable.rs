@@ -13,9 +13,41 @@ pub trait Callable: std::fmt::Display {
     fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Object;
 }
 
+#[derive(Clone, PartialEq)]
+pub enum Fun {
+    Clock(clock::ClockFn),
+    Function(Function),
+}
+
+impl Callable for Fun {
+    fn arity(&self) -> usize {
+        match self {
+            Self::Clock(f) => f.arity(),
+            Self::Function(f) => f.arity(),
+        }
+    }
+
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Object {
+        match self {
+            Self::Clock(f) => f.call(interpreter, arguments),
+            Self::Function(f) => f.call(interpreter, arguments),
+        }
+    }
+}
+
+impl std::fmt::Display for Fun {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Clock(fun) => write!(f, "{}", fun),
+            Self::Function(fun) => write!(f, "{}", fun),
+        }
+    }
+}
+
 pub mod clock {
     use crate::scanner::token::Object;
 
+    #[derive(Clone, PartialEq)]
     pub struct ClockFn;
 
     impl ClockFn {
@@ -52,6 +84,7 @@ pub mod clock {
     }
 }
 
+#[derive(Clone, PartialEq)]
 pub struct Function {
     declaration: stmt::function::Function,
     closure: Rc<RefCell<Environment>>,

@@ -11,6 +11,14 @@ pub struct Function {
     body: Rc<Vec<Box<dyn Stmt>>>,
 }
 
+impl PartialEq for Function {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+            && self.params == other.params
+            && Rc::ptr_eq(&self.body, &other.body)
+    }
+}
+
 impl Function {
     pub fn new(name: Token, params: Vec<Token>, body: Vec<Box<dyn Stmt>>) -> Self {
         Self {
