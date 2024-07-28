@@ -32,7 +32,7 @@ impl Environment {
                         format!("Undefined variable '{}'.", name.lexeme()),
                         name.to_owned(),
                     );
-                    return Err(Error::RuntimeError(error));
+                    return Err(Error::Runtime(error.into()));
                 }
             }
         }
@@ -45,7 +45,7 @@ impl Environment {
                         format!("Undefined variable '{}'.", name.lexeme()),
                         name.to_owned(),
                     );
-                    return Err(Error::RuntimeError(error));
+                    return Err(Error::Runtime(error.into()));
                 }
             }
         }
@@ -54,7 +54,7 @@ impl Environment {
             format!("Undefined variable '{}'.", name.lexeme()),
             name.to_owned(),
         );
-        Err(Error::RuntimeError(error))
+        Err(Error::Runtime(error.into()))
     }
 
     pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), Error> {
@@ -71,7 +71,7 @@ impl Environment {
                         format!("Undefined variable '{}'.", name.lexeme()),
                         name.to_owned(),
                     );
-                    return Err(Error::RuntimeError(error));
+                    return Err(Error::Runtime(error.into()));
                 }
             }
         }
@@ -80,6 +80,6 @@ impl Environment {
             format!("Undefined variable '{}'.", name.lexeme()),
             name.to_owned(),
         );
-        Err(Error::RuntimeError(error))
+        Err(Error::Runtime(error.into()))
     }
 }
