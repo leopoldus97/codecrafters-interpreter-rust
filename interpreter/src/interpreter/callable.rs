@@ -43,7 +43,7 @@ pub mod clock {
 
     impl std::fmt::Display for ClockFn {
         fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            write!(f, "<native fn>")
+            write!(f, "<fn clock>")
         }
     }
 }
@@ -68,7 +68,10 @@ impl Callable for Function {
 
         for (index, param) in self.declaration.params().iter().enumerate() {
             let name = param.lexeme().to_string();
-            let value = arguments.get(index).unwrap().to_owned();
+            let value = match arguments.get(index) {
+                Some(value) => value.to_owned(),
+                None => Object::Nil,
+            };
 
             environment.define(name, value);
         }

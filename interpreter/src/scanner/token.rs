@@ -54,7 +54,19 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+impl Clone for Box<dyn Callable> {
+    fn clone(&self) -> Self {
+        self.to_owned()
+    }
+}
+
+impl PartialEq for Box<dyn Callable> {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_string() == other.to_string() && self.arity() == other.arity()
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub enum Object {
     Str(String),
     Num(f64),

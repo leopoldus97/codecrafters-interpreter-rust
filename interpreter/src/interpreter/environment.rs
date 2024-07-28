@@ -25,11 +25,29 @@ impl Environment {
 
     pub fn get(&self, name: &Token) -> Result<Object, Error> {
         if self.values.contains_key(name.lexeme()) {
-            return Ok(self.values.get(name.lexeme()).unwrap().to_owned());
+            match self.values.get(name.lexeme()) {
+                Some(value) => return Ok(value.to_owned()),
+                None => {
+                    let error = RuntimeError::new(
+                        format!("Undefined variable '{}'.", name.lexeme()),
+                        name.to_owned(),
+                    );
+                    return Err(Error::RuntimeError(error));
+                }
+            }
         }
 
         if self.enclosing.is_some() {
-            return self.enclosing.as_ref().unwrap().borrow().get(name);
+            match self.enclosing.as_ref() {
+                Some(enclosing) => return enclosing.borrow().get(name),
+                None => {
+                    let error = RuntimeError::new(
+                        format!("Undefined variable '{}'.", name.lexeme()),
+                        name.to_owned(),
+                    );
+                    return Err(Error::RuntimeError(error));
+                }
+            }
         }
 
         let error = RuntimeError::new(
@@ -46,12 +64,16 @@ impl Environment {
         }
 
         if self.enclosing.is_some() {
-            return self
-                .enclosing
-                .as_ref()
-                .unwrap()
-                .borrow_mut()
-                .assign(name, value);
+            match self.enclosing.as_ref() {
+                Some(enclosing) => return enclosing.borrow_mut().assign(name, value),
+                None => {
+                    let error = RuntimeError::new(
+                        format!("Undefined variable '{}'.", name.lexeme()),
+                        name.to_owned(),
+                    );
+                    return Err(Error::RuntimeError(error));
+                }
+            }
         }
 
         let error = RuntimeError::new(
