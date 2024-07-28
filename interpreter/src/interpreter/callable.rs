@@ -1,6 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{ast::stmt, scanner::token::Object};
+use crate::{
+    ast::stmt,
+    scanner::token::Object,
+    utils::error::{Error, Runtime},
+};
 
 use super::{environment::Environment, Interpreter};
 
@@ -50,11 +54,23 @@ pub mod clock {
 
 pub struct Function {
     declaration: stmt::function::Function,
+    closure: Rc<RefCell<Environment>>,
 }
 
 impl Function {
-    pub fn new(declaration: stmt::function::Function) -> Self {
-        Self { declaration }
+    pub fn new(declaration: stmt::function::Function, closure: Rc<RefCell<Environment>>) -> Self {
+        Self {
+            declaration,
+            closure,
+        }
+    }
+
+    pub fn declaration(&self) -> &stmt::function::Function {
+        &self.declaration
+    }
+
+    pub fn closure(&self) -> Rc<RefCell<Environment>> {
+        Rc::clone(&self.closure)
     }
 }
 
@@ -64,7 +80,7 @@ impl Callable for Function {
     }
 
     fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Object {
-        let mut environment = Environment::new(Some(Rc::clone(&interpreter.globals)));
+        let mut environment = Environment::new(Some(Rc::clone(&self.closure)));
 
         for (index, param) in self.declaration.params().iter().enumerate() {
             let name = param.lexeme().to_string();
@@ -78,9 +94,12 @@ impl Callable for Function {
 
         let environment = Rc::new(RefCell::new(environment));
 
-        interpreter
-            .execute_block(self.declaration.body(), environment)
-            .unwrap();
+        if let Err(Error::Runtime(Runtime::Return(r))) =
+            interpreter.execute_block(self.declaration.body(), environment)
+        {
+            return r.value().to_owned();
+        }
+
         Object::Nil
     }
 }

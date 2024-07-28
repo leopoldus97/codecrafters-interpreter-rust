@@ -304,7 +304,7 @@ impl stmt::Visitor for Interpreter {
     }
 
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<(), Error> {
-        let function = callable::Function::new(stmt.clone());
+        let function = callable::Function::new(stmt.clone(), Rc::clone(&self.environment));
         let callable = Object::Callable(Box::new(function));
         self.environment
             .borrow_mut()
