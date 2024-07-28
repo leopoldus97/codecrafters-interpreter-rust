@@ -6,11 +6,8 @@ use std::{
 };
 
 use lox_rs::{
-    ast::stmt::Stmt,
-    interpreter::{environment::Environment, Interpreter},
-    parser::Parser,
-    scanner::Scanner,
-    HAD_ERROR, HAD_RUNTIME_ERROR,
+    ast::stmt::Stmt, interpreter::Interpreter, parser::Parser, scanner::Scanner, HAD_ERROR,
+    HAD_RUNTIME_ERROR,
 };
 
 fn main() {
@@ -32,9 +29,7 @@ fn run_file(file_path: &String) {
         process::exit(74);
     });
 
-    let environment = Environment::new(None);
-
-    let mut interpreter = Interpreter::new(environment);
+    let mut interpreter = Interpreter::new();
 
     run(file_contents, &mut interpreter);
 
@@ -59,9 +54,7 @@ fn run_prompt() {
             break;
         }
 
-        let environment = Environment::new(None);
-
-        let mut interpreter = Interpreter::new(environment);
+        let mut interpreter = Interpreter::new();
 
         run(line, &mut interpreter);
 

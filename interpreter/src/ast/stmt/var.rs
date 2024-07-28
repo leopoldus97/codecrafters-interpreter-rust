@@ -1,12 +1,10 @@
 use crate::{
+    ast::expr::Expr,
     scanner::token::{Object, Token},
     utils::error::Error,
 };
 
-use super::{
-    expr::Expr,
-    stmt::{self, Stmt},
-};
+use super::Stmt;
 
 pub struct Var {
     name: Token,
@@ -28,7 +26,7 @@ impl Var {
 }
 
 impl Stmt for Var {
-    fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
         visitor.visit_var_stmt(self)
     }
 

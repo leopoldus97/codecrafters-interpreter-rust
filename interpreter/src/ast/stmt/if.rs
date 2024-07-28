@@ -1,14 +1,11 @@
-use crate::{scanner::token::Object, utils::error::Error};
+use crate::{ast::expr::Expr, scanner::token::Object, utils::error::Error};
 
-use super::{
-    expr::Expr,
-    stmt::{self, Stmt},
-};
+use super::Stmt;
 
 pub struct If {
-    pub condition: Box<dyn Expr<Object>>,
-    pub then_branch: Box<dyn Stmt>,
-    pub else_branch: Option<Box<dyn Stmt>>,
+    condition: Box<dyn Expr<Object>>,
+    then_branch: Box<dyn Stmt>,
+    else_branch: Option<Box<dyn Stmt>>,
 }
 
 impl If {
@@ -38,7 +35,7 @@ impl If {
 }
 
 impl Stmt for If {
-    fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
         visitor.visit_if_stmt(self)
     }
 

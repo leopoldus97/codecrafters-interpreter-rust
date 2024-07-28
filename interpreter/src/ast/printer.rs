@@ -1,10 +1,6 @@
 use crate::utils::error::Error;
 
-use super::{
-    assign, binary,
-    expr::{self, Expr},
-    grouping, literal, logical, unary, variable,
-};
+use super::expr::{self, assign, binary, call, grouping, literal, logical, unary, variable, Expr};
 
 pub struct AstPrinter {}
 
@@ -42,6 +38,10 @@ impl expr::Visitor<String> for AstPrinter {
     fn visit_binary_expr(&mut self, expr: &binary::Binary<String>) -> Result<String, Error> {
         let exprs = [expr.left(), expr.right()];
         self.parenthesize(expr.operator().lexeme(), &exprs)
+    }
+
+    fn visit_call_expr(&mut self, _expr: &call::Call<String>) -> Result<String, Error> {
+        todo!()
     }
 
     fn visit_grouping_expr(&mut self, expr: &grouping::Grouping<String>) -> Result<String, Error> {

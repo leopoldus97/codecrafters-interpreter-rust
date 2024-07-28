@@ -1,6 +1,6 @@
 use crate::{scanner::token::Token, utils::error::Error};
 
-use super::expr::{self, Expr};
+use super::Expr;
 
 pub struct Logical<R> {
     pub left: Box<dyn Expr<R>>,
@@ -31,7 +31,7 @@ impl<R> Logical<R> {
 }
 
 impl<R: 'static> Expr<R> for Logical<R> {
-    fn accept(&self, visitor: &mut dyn expr::Visitor<R>) -> Result<R, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor<R>) -> Result<R, Error> {
         visitor.visit_logical_expr(self)
     }
 

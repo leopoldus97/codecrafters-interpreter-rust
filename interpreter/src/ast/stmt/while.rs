@@ -1,9 +1,6 @@
-use crate::{scanner::token::Object, utils::error::Error};
+use crate::{ast::expr::Expr, scanner::token::Object, utils::error::Error};
 
-use super::{
-    expr::Expr,
-    stmt::{self, Stmt},
-};
+use super::Stmt;
 
 pub struct While {
     condition: Box<dyn Expr<Object>>,
@@ -25,7 +22,7 @@ impl While {
 }
 
 impl Stmt for While {
-    fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
         visitor.visit_while_stmt(self)
     }
 

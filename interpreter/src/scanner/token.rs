@@ -1,6 +1,8 @@
+use crate::interpreter::callable::Fun;
+
 use super::token_type::TokenType;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq)]
 pub struct Token {
     token_type: TokenType,
     lexeme: String,
@@ -52,11 +54,12 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub enum Object {
     Str(String),
     Num(f64),
     Bool(bool),
+    Callable(Box<Fun>),
     Nil,
 }
 
@@ -66,6 +69,7 @@ impl std::fmt::Display for Object {
             Object::Str(s) => write!(f, "{}", s),
             Object::Num(n) => write!(f, "{}", n),
             Object::Bool(b) => write!(f, "{}", b),
+            Object::Callable(c) => write!(f, "{}", c),
             Object::Nil => write!(f, "nil"),
         }
     }

@@ -1,15 +1,12 @@
-use crate::{scanner::token::Object, utils::error::Error};
+use crate::{ast::expr::Expr, scanner::token::Object, utils::error::Error};
 
-use super::{
-    expr::Expr,
-    stmt::{self, Stmt},
-};
+use super::Stmt;
 
-pub struct Expression {
+pub struct Print {
     expression: Box<dyn Expr<Object>>,
 }
 
-impl Expression {
+impl Print {
     pub fn new(expression: Box<dyn Expr<Object>>) -> Self {
         Self { expression }
     }
@@ -19,9 +16,9 @@ impl Expression {
     }
 }
 
-impl Stmt for Expression {
-    fn accept(&self, visitor: &mut dyn stmt::Visitor) -> Result<(), Error> {
-        visitor.visit_expression_stmt(self)
+impl Stmt for Print {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+        visitor.visit_print_stmt(self)
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
