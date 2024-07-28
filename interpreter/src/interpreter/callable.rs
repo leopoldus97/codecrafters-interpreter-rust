@@ -20,6 +20,12 @@ pub mod clock {
         }
     }
 
+    impl Default for ClockFn {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl super::Callable for ClockFn {
         fn arity(&self) -> usize {
             0

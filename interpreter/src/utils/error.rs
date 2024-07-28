@@ -28,6 +28,16 @@ impl std::fmt::Display for Error {
     }
 }
 
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Error::ParseError(_) => write!(f, "Parse error"),
+            Error::RuntimeError(e) => write!(f, "Runtime error: {} at {}", e.message(), e.token()),
+            Error::ScanError => write!(f, "Scan error"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ParseError {}
 

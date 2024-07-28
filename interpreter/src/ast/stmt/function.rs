@@ -4,6 +4,7 @@ use crate::{scanner::token::Token, utils::error::Error};
 
 use super::Stmt;
 
+#[derive(Clone)]
 pub struct Function {
     name: Token,
     params: Vec<Token>,
