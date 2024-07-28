@@ -54,13 +54,13 @@ impl Function {
 
 impl Callable for Function {
     fn arity(&self) -> usize {
-        self.declaration.params.len()
+        self.declaration.params().len()
     }
 
     fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Object {
         let mut environment = Environment::new(Some(Rc::clone(&interpreter.globals)));
 
-        for (index, param) in self.declaration.params.iter().enumerate() {
+        for (index, param) in self.declaration.params().iter().enumerate() {
             let name = param.lexeme().to_string();
             let value = arguments.get(index).unwrap().to_owned();
 
@@ -69,13 +69,15 @@ impl Callable for Function {
 
         let environment = Rc::new(RefCell::new(environment));
 
-        interpreter.execute_block(&self.declaration.body, environment);
+        interpreter
+            .execute_block(self.declaration.body(), environment)
+            .unwrap();
         Object::Nil
     }
 }
 
 impl std::fmt::Display for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "<fn {}>", self.declaration.name.lexeme())
+        write!(f, "<fn {}>", self.declaration.name().lexeme())
     }
 }

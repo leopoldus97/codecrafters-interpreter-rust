@@ -1,16 +1,22 @@
+use std::rc::Rc;
+
 use crate::{scanner::token::Token, utils::error::Error};
 
 use super::Stmt;
 
 pub struct Function {
-    pub name: Token,
-    pub params: Vec<Token>,
-    pub body: Vec<Box<dyn Stmt>>,
+    name: Token,
+    params: Vec<Token>,
+    body: Rc<Vec<Box<dyn Stmt>>>,
 }
 
 impl Function {
     pub fn new(name: Token, params: Vec<Token>, body: Vec<Box<dyn Stmt>>) -> Self {
-        Self { name, params, body }
+        Self {
+            name,
+            params,
+            body: Rc::new(body),
+        }
     }
 
     pub fn name(&self) -> &Token {

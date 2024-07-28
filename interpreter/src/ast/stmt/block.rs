@@ -3,7 +3,7 @@ use crate::utils::error::Error;
 use super::Stmt;
 
 pub struct Block {
-    pub statements: Vec<Box<dyn Stmt>>,
+    statements: Vec<Box<dyn Stmt>>,
 }
 
 impl Block {

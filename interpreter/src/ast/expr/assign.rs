@@ -3,8 +3,8 @@ use crate::{scanner::token::Token, utils::error::Error};
 use super::Expr;
 
 pub struct Assign<R> {
-    pub name: Token,
-    pub value: Box<dyn Expr<R>>,
+    name: Token,
+    value: Box<dyn Expr<R>>,
 }
 
 impl<R> Assign<R> {

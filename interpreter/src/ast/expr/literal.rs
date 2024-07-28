@@ -3,7 +3,7 @@ use crate::{scanner::token::Object, utils::error::Error};
 use super::Expr;
 
 pub struct Literal {
-    pub value: Object,
+    value: Object,
 }
 
 impl Literal {

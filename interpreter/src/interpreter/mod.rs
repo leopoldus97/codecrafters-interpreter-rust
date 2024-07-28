@@ -218,7 +218,7 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_literal_expr(&mut self, expr: &Literal) -> Result<Object, Error> {
-        Ok(expr.value.to_owned())
+        Ok(expr.value().to_owned())
     }
 
     fn visit_logical_expr(&mut self, expr: &Logical<Object>) -> Result<Object, Error> {
@@ -269,7 +269,7 @@ impl stmt::Visitor for Interpreter {
     fn visit_block_stmt(&mut self, stmt: &Block) -> Result<(), Error> {
         let inner_environment = Environment::new(Some(Rc::clone(&self.environment)));
         let inner_environment = Rc::new(RefCell::new(inner_environment));
-        self.execute_block(&stmt.statements, inner_environment)
+        self.execute_block(stmt.statements(), inner_environment)
     }
 
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<(), Error> {
