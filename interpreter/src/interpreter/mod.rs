@@ -101,7 +101,7 @@ impl Interpreter {
         &mut self,
         statements: &Vec<Box<dyn Stmt>>,
         environment: Rc<RefCell<Environment>>,
-    ) -> Result<(), Error> {
+    ) -> Result<Object, Error> {
         let previous = Rc::clone(&self.environment);
         self.environment = environment;
         for statement in statements {
@@ -111,14 +111,14 @@ impl Interpreter {
             }
         }
         self.environment = previous;
-        Ok(())
+        Ok(Object::Nil)
     }
 
     fn evaluate(&mut self, expr: &dyn Expr<Object>) -> Result<Object, Error> {
         expr.accept(self)
     }
 
-    fn execute(&mut self, stmt: &dyn Stmt) -> Result<(), Error> {
+    fn execute(&mut self, stmt: &dyn Stmt) -> Result<Object, Error> {
         stmt.accept(self)
     }
 
@@ -363,46 +363,46 @@ impl expr::Visitor<Object> for Interpreter {
 }
 
 impl stmt::Visitor for Interpreter {
-    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<(), Error> {
+    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<Object, Error> {
         let inner_environment = Environment::new(Some(Rc::clone(&self.environment)));
         let inner_environment = Rc::new(RefCell::new(inner_environment));
         self.execute_block(stmt.statements(), inner_environment)
     }
 
-    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<(), Error> {
-        self.evaluate(stmt.expression(), self)?;
-        Ok(())
+    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Error> {
+        self.evaluate(stmt.expression())?;
+        Ok(Object::Nil)
     }
 
-    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<(), Error> {
+    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<Object, Error> {
         let function = callable::Function::new(stmt.clone(), Rc::clone(&self.environment));
         let callable = Object::Callable(Box::new(Fun::Function(function)));
         self.environment
             .borrow_mut()
             .define(stmt.name().lexeme().to_owned(), callable);
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_if_stmt(&mut self, stmt: &If) -> Result<(), Error> {
-        let condition = self.evaluate(stmt.condition(), self)?;
+    fn visit_if_stmt(&mut self, stmt: &If) -> Result<Object, Error> {
+        let condition = self.evaluate(stmt.condition())?;
         if condition.is_truthy() {
-            self.execute(stmt.then_branch(), self)?;
+            self.execute(stmt.then_branch())?;
         } else if let Some(else_branch) = stmt.else_branch() {
-            self.execute(else_branch, self)?;
+            self.execute(else_branch)?;
         }
 
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<(), Error> {
-        let value = self.evaluate(stmt.expression(), self)?;
+    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<Object, Error> {
+        let value = self.evaluate(stmt.expression())?;
         println!("{}", value);
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_return_stmt(&mut self, stmt: &stmt::r#return::Return) -> Result<(), Error> {
+    fn visit_return_stmt(&mut self, stmt: &stmt::r#return::Return) -> Result<Object, Error> {
         let value = if let Some(value) = stmt.value() {
-            self.evaluate(value.as_ref(), self)?
+            self.evaluate(value.as_ref())?
         } else {
             Object::Nil
         };
@@ -410,9 +410,9 @@ impl stmt::Visitor for Interpreter {
         Err(Error::Runtime(Return::new(value).into()))
     }
 
-    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<(), Error> {
+    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<Object, Error> {
         let value = if let Some(initializer) = stmt.initializer() {
-            self.evaluate(initializer.as_ref(), self)?
+            self.evaluate(initializer.as_ref())?
         } else {
             Object::Nil
         };
@@ -420,15 +420,15 @@ impl stmt::Visitor for Interpreter {
         self.environment
             .borrow_mut()
             .define(stmt.name().lexeme().to_owned(), value);
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_while_stmt(&mut self, stmt: &While) -> Result<(), Error> {
-        while self.evaluate(stmt.condition(), self)?.is_truthy() {
-            self.execute(stmt.body(), self)?;
+    fn visit_while_stmt(&mut self, stmt: &While) -> Result<Object, Error> {
+        while self.evaluate(stmt.condition())?.is_truthy() {
+            self.execute(stmt.body())?;
         }
 
-        Ok(())
+        Ok(Object::Nil)
     }
 }
 

@@ -1,6 +1,9 @@
 use std::rc::Rc;
 
-use crate::{scanner::token::Token, utils::error::Error};
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::Error,
+};
 
 use super::Stmt;
 
@@ -42,7 +45,7 @@ impl Function {
 }
 
 impl Stmt for Function {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_function_stmt(self)
     }
 

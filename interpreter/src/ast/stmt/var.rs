@@ -26,7 +26,7 @@ impl Var {
 }
 
 impl Stmt for Var {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_var_stmt(self)
     }
 

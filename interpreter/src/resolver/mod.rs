@@ -38,18 +38,18 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    pub fn resolve(&mut self, statements: &Vec<Box<dyn Stmt>>) -> Result<(), Error> {
+    pub fn resolve(&mut self, statements: &Vec<Box<dyn Stmt>>) -> Result<Object, Error> {
         for stmt in statements {
             self.resolve_statement(stmt.as_ref())?;
         }
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn resolve_statement(&mut self, stmt: &dyn Stmt) -> Result<(), Error> {
+    fn resolve_statement(&mut self, stmt: &dyn Stmt) -> Result<Object, Error> {
         stmt.accept(self)
     }
 
-    fn resolve_expression(&mut self, expr: &dyn Expr<Object>) -> Result<(), Error> {
+    fn resolve_expression(&mut self, expr: &dyn Expr<Object>) -> Result<Object, Error> {
         expr.accept(self)
     }
 
@@ -86,7 +86,8 @@ impl<'a> Resolver<'a> {
     fn resolve_local(&mut self, expr: &dyn Expr<Object>, name: &Token) {
         for (i, scope) in self.scopes.iter().enumerate().rev() {
             if scope.contains_key(name.lexeme()) {
-                self.interpreter.resolve(expr, self.scopes.len() - 1 - i);
+                self.interpreter
+                    .resolve(expr, (self.scopes.len() - 1 - i) as u8);
                 return;
             }
         }
@@ -152,7 +153,12 @@ impl<'a> expr::Visitor<Object> for Resolver<'a> {
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
         if !self.scopes.is_empty()
             && self.scopes.last().is_some()
-            && self.scopes.last().unwrap().get(expr.name().lexeme()) == false
+            && self
+                .scopes
+                .last()
+                .unwrap()
+                .get(expr.name().lexeme())
+                .is_some_and(|b| b == &false)
         {
             eprintln!("Cannot read local variable in its own initializer.");
         }
@@ -163,41 +169,41 @@ impl<'a> expr::Visitor<Object> for Resolver<'a> {
 }
 
 impl<'a> stmt::Visitor for Resolver<'a> {
-    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<(), Error> {
+    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<Object, Error> {
         self.begin_scope();
         self.resolve(stmt.statements())?;
         self.end_scope();
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<(), Error> {
+    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Error> {
         self.resolve_expression(stmt.expression())?;
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<(), Error> {
+    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<Object, Error> {
         self.declare(stmt.name());
         self.define(stmt.name());
 
         self.resolve_function(stmt, FunctionType::Function);
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_if_stmt(&mut self, stmt: &If) -> Result<(), Error> {
+    fn visit_if_stmt(&mut self, stmt: &If) -> Result<Object, Error> {
         self.resolve_expression(stmt.condition())?;
         self.resolve_statement(stmt.then_branch())?;
         if let Some(ref else_branch) = stmt.else_branch() {
             self.resolve_statement(*else_branch)?;
         }
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<(), Error> {
+    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<Object, Error> {
         self.resolve_expression(stmt.expression())?;
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_return_stmt(&mut self, stmt: &Return) -> Result<(), Error> {
+    fn visit_return_stmt(&mut self, stmt: &Return) -> Result<Object, Error> {
         if self.current_function == FunctionType::None {
             eprintln!(
                 "{} Cannot return from top-level code.",
@@ -208,21 +214,21 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         if let Some(ref value) = stmt.value() {
             self.resolve_expression(value.as_ref())?;
         }
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<(), Error> {
+    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<Object, Error> {
         self.declare(stmt.name());
         if let Some(ref initializer) = stmt.initializer() {
             self.resolve_expression(initializer.as_ref())?;
         }
         self.define(&stmt.name());
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_while_stmt(&mut self, stmt: &While) -> Result<(), Error> {
+    fn visit_while_stmt(&mut self, stmt: &While) -> Result<Object, Error> {
         self.resolve_expression(stmt.condition())?;
         self.resolve_statement(stmt.body())?;
-        Ok(())
+        Ok(Object::Nil)
     }
 }

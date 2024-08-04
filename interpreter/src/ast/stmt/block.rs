@@ -1,4 +1,4 @@
-use crate::utils::error::Error;
+use crate::{scanner::token::Object, utils::error::Error};
 
 use super::Stmt;
 
@@ -17,7 +17,7 @@ impl Block {
 }
 
 impl Stmt for Block {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_block_stmt(self)
     }
 

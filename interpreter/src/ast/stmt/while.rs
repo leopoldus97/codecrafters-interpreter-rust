@@ -22,7 +22,7 @@ impl While {
 }
 
 impl Stmt for While {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_while_stmt(self)
     }
 

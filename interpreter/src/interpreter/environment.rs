@@ -58,14 +58,21 @@ impl Environment {
     }
 
     pub fn get_at(&self, distance: usize, name: String) -> Result<Object, Error> {
-        self.ancestor(distance)?.borrow_mut().values.get(name)?
+        Ok(self
+            .ancestor(distance)?
+            .borrow_mut()
+            .values
+            .get(&name)
+            .unwrap()
+            .to_owned())
     }
 
     pub fn ancestor(&self, distance: usize) -> Result<Rc<RefCell<Environment>>, Error> {
-        let mut environment = Rc::clone(self.enclosing.as_ref().unwrap());
+        let mut environment: Rc<RefCell<Environment>> = Rc::clone(self.enclosing.as_ref().unwrap());
 
         for _ in 0..distance {
-            environment = Rc::clone(environment.borrow().enclosing.as_ref().unwrap());
+            let enclosing = environment.borrow().enclosing.as_ref().unwrap();
+            environment = Rc::clone(enclosing);
         }
 
         Ok(environment)
