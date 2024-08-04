@@ -309,6 +309,21 @@ impl expr::Visitor for Interpreter {
         }
     }
 
+    fn visit_get_expr(&mut self, expr: &expr::get::Get) -> Result<Object, Error> {
+        let object = self.evaluate(expr.object().as_ref())?;
+        if let Object::Class(instance) = object {
+            instance.get(expr.name())
+        } else {
+            Err(Error::Runtime(
+                RuntimeError::new(
+                    String::from("Only instances have properties"),
+                    expr.name().to_owned(),
+                )
+                .into(),
+            ))
+        }
+    }
+
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
         self.evaluate(expr.expression())
     }

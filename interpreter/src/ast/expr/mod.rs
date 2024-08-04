@@ -1,6 +1,7 @@
 pub mod assign;
 pub mod binary;
 pub mod call;
+pub mod get;
 pub mod grouping;
 pub mod literal;
 pub mod logical;
@@ -17,7 +18,7 @@ pub mod variable;
 // term           → factor ( ( "-" | "+" ) factor )* ;
 // factor         → unary ( ( "/" | "*" ) unary )* ;
 // unary          → ( "!" | "-" ) unary | call ;
-// call           → primary ( "(" arguments? ")" )* ;
+// call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments      → expression ( "," expression )* ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" | IDENTIFIER ;
@@ -35,6 +36,7 @@ pub trait Visitor {
     fn visit_assign_expr(&mut self, expr: &assign::Assign) -> Result<Object, Error>;
     fn visit_binary_expr(&mut self, expr: &binary::Binary) -> Result<Object, Error>;
     fn visit_call_expr(&mut self, expr: &call::Call) -> Result<Object, Error>;
+    fn visit_get_expr(&mut self, expr: &get::Get) -> Result<Object, Error>;
     fn visit_grouping_expr(&mut self, expr: &grouping::Grouping) -> Result<Object, Error>;
     fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<Object, Error>;
     fn visit_logical_expr(&mut self, expr: &logical::Logical) -> Result<Object, Error>;

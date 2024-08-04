@@ -5,10 +5,12 @@ use std::rc::Rc;
 use crate::{
     ast::{
         expr::{
-            assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping, literal::Literal, logical::Logical, set::Set, unary::Unary, variable::Variable, Expr
+            assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
+            literal::Literal, logical::Logical, set::Set, unary::Unary, variable::Variable, Expr,
         },
         stmt::{
-            block::Block, class::Class, expression::Expression, function::Function, r#if::If, print::Print, r#return::Return, var::Var, r#while::While, Stmt
+            block::Block, class::Class, expression::Expression, function::Function, print::Print,
+            r#if::If, r#return::Return, r#while::While, var::Var, Stmt,
         },
     },
     parser::error::error,
@@ -434,6 +436,10 @@ impl Parser {
         loop {
             if self.match_token_types(&[TokenType::LeftParen]) {
                 expr = self.finish_call(expr)?;
+            } else if self.match_token_types(&[TokenType::Dot]) {
+                let name =
+                    self.consume(TokenType::Identifier, "Expect property name after '.'.")?;
+                expr = Rc::new(Get::new(expr, name));
             } else {
                 break;
             }

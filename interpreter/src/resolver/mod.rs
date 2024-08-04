@@ -7,7 +7,8 @@ use crate::{
             logical::Logical, unary::Unary, variable::Variable, Expr,
         },
         stmt::{
-            self, block::Block, class::Class, expression::Expression, function::Function, r#if::If, print::Print, r#return::Return, var::Var, r#while::While, Stmt
+            self, block::Block, class::Class, expression::Expression, function::Function,
+            print::Print, r#if::If, r#return::Return, r#while::While, var::Var, Stmt,
         },
     },
     interpreter::Interpreter,
@@ -130,6 +131,11 @@ impl<'a> expr::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
+    fn visit_get_expr(&mut self, expr: &expr::get::Get) -> Result<Object, Error> {
+        self.resolve_expression(expr.object().as_ref())?;
+        Ok(Object::Nil)
+    }
+
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
         self.resolve_expression(expr.expression())?;
         Ok(Object::Nil)
@@ -175,7 +181,7 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         self.end_scope();
         Ok(Object::Nil)
     }
-    
+
     fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Error> {
         self.declare(stmt.name());
         self.define(stmt.name());
