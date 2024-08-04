@@ -2,7 +2,7 @@ pub mod callable;
 pub mod environment;
 mod error;
 
-use std::{cell::RefCell, collections::HashMap, ops::Neg, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, hash::{Hash, Hasher}, ops::Neg, rc::Rc};
 
 use callable::{clock::ClockFn, Callable, Fun};
 use environment::Environment;
@@ -26,11 +26,34 @@ use crate::{
     utils::error::{Error, Return, RuntimeError},
 };
 
-#[derive(Clone, PartialEq)]
+struct ExprKey {
+    expr: Rc<dyn Expr<Object>>,
+}
+
+impl PartialEq for ExprKey {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.expr, &other.expr)
+    }
+}
+
+impl Eq for ExprKey {}
+
+impl Hash for ExprKey {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.expr).hash(state);
+    }
+}
+
+impl ExprKey {
+    fn new(expr: &dyn Expr<Object>) -> Self {
+        Self { expr: Rc::new(expr) }
+    }
+}
+
 pub struct Interpreter {
     environment: Rc<RefCell<Environment>>,
     globals: Rc<RefCell<Environment>>,
-    locals: HashMap<String, u8>,
+    locals: HashMap<ExprKey, u8>,
 }
 
 impl Interpreter {
@@ -91,14 +114,16 @@ impl Interpreter {
         stmt.accept(self)
     }
 
-    fn resolve(&mut self, expr: &dyn Expr<Object>, depth: u8) -> Result<(), Error> {
-        self.locals.insert(expr, depth);
-        Ok(())
+    pub fn resolve(&mut self, expr: &dyn Expr<Object>, depth: u8) -> Result<Object, Error> {
+        let key = ExprKey::new(expr);
+        self.locals.insert(key, depth);
+        Ok(Object::Nil)
     }
 
     fn look_up_variable(&self, name: &Token, expr: &dyn Expr<Object>) -> Result<Object, Error> {
-        if let Some(distance) = self.locals.get(expr) {
-            self.environment.borrow().get_at(*distance, name)
+        let key = ExprKey::new(expr);
+        if let Some(distance) = self.locals.get(&key) {
+            self.environment.borrow().get_at(*distance as usize, name.lexeme().to_owned())
         } else {
             self.globals.borrow().get(name)
         }
@@ -108,14 +133,15 @@ impl Interpreter {
 impl expr::Visitor<Object> for Interpreter {
     fn visit_assign_expr(&mut self, expr: &Assign<Object>) -> Result<Object, Error> {
         let value = self.evaluate(expr.value())?;
+        let key = ExprKey::new(expr);
 
-        let distance = self.locals.get(expr);
+        let distance = self.locals.get(&key);
         if let Some(distance) = distance {
             self.environment
                 .borrow_mut()
-                .assign_at(*distance, expr.name(), value);
+                .assign_at(*distance as usize, expr.name(), value.to_owned());
         } else {
-            self.globals.borrow_mut().assign(expr.name(), value);
+            self.globals.borrow_mut().assign(expr.name(), value.to_owned());
         }
 
         Ok(value)
@@ -318,7 +344,7 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
-        look_up_variable(expr.name(), expr)
+        self.look_up_variable(expr.name(), expr)
     }
 }
 

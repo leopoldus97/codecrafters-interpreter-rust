@@ -97,7 +97,7 @@ impl Environment {
         Err(Error::Runtime(error.into()))
     }
 
-    fn assign_at(&mut self, distance: usize, name: &Token, value: Object) -> Result<(), Error> {
+    pub fn assign_at(&mut self, distance: usize, name: &Token, value: Object) -> Result<(), Error> {
         self.ancestor(distance)?
             .borrow_mut()
             .values
