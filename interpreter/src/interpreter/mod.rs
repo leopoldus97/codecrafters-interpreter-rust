@@ -404,8 +404,6 @@ impl stmt::Visitor for Interpreter {
         self.environment
             .borrow_mut()
             .define(stmt.name().lexeme().to_owned(), Object::Nil);
-        let klass = Object::Class(stmt.name().lexeme().to_owned());
-        self.environment.borrow_mut().assign(stmt.name(), klass)?;
         Ok(Object::Nil)
     }
 
