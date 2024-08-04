@@ -1,4 +1,10 @@
-use crate::{ast::{expr::variable::Variable, stmt::{function::Function, Stmt}}, scanner::token::Token};
+use crate::{
+    ast::{
+        expr::variable::Variable,
+        stmt::{function::Function, Stmt},
+    },
+    scanner::token::Token,
+};
 
 pub struct Class {
     name: Token,
@@ -29,7 +35,10 @@ impl Class {
 }
 
 impl Stmt for Class {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<crate::scanner::token::Object, crate::utils::error::Error> {
+    fn accept(
+        &self,
+        visitor: &mut dyn super::Visitor,
+    ) -> Result<crate::scanner::token::Object, crate::utils::error::Error> {
         visitor.visit_class_stmt(self)
     }
 
