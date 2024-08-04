@@ -334,6 +334,13 @@ impl Parser {
             if let Some(variable) = expr.as_any().downcast_ref::<Variable>() {
                 let name = variable.name().to_owned();
                 return Ok(Rc::new(Assign::new(name, value)));
+            } else if let Some(get) = expr.as_any().downcast_ref::<Get>() {
+                let get = get.to_owned();
+                return Ok(Rc::new(Set::new(
+                    get.object(),
+                    get.name().to_owned(),
+                    value,
+                )));
             }
 
             let error = self.error(&equals, "Invalid assignment target.");

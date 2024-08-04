@@ -346,6 +346,24 @@ impl expr::Visitor for Interpreter {
         self.evaluate(expr.right())
     }
 
+    fn visit_set_expr(&mut self, expr: &expr::set::Set) -> Result<Object, Error> {
+        let object = self.evaluate(expr.object().as_ref())?;
+
+        if let Object::Class(mut instance) = object {
+            let value = self.evaluate(expr.value().as_ref())?;
+            instance.set(expr.name(), value.to_owned());
+            Ok(value)
+        } else {
+            Err(Error::Runtime(
+                RuntimeError::new(
+                    String::from("Only instances have fields"),
+                    expr.name().to_owned(),
+                )
+                .into(),
+            ))
+        }
+    }
+
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Error> {
         let right = self.evaluate(expr.right())?;
 

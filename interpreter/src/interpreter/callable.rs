@@ -172,6 +172,10 @@ impl Instance {
             ))
         }
     }
+
+    pub fn set(&mut self, name: &Token, value: Object) {
+        self.fields.insert(name.lexeme().to_string(), value);
+    }
 }
 
 impl std::fmt::Display for Instance {

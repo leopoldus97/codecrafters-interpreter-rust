@@ -151,6 +151,12 @@ impl<'a> expr::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
+    fn visit_set_expr(&mut self, expr: &expr::set::Set) -> Result<Object, Error> {
+        self.resolve_expression(expr.value().as_ref())?;
+        self.resolve_expression(expr.object().as_ref())?;
+        Ok(Object::Nil)
+    }
+
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Error> {
         self.resolve_expression(expr.right())?;
         Ok(Object::Nil)
