@@ -70,9 +70,8 @@ impl Environment {
     pub fn ancestor(&self, distance: usize) -> Result<Rc<RefCell<Environment>>, Error> {
         let mut environment = Rc::clone(self.enclosing.as_ref().unwrap());
 
-        for _ in 0..distance {
-            let enclosing = environment.borrow().enclosing.as_ref().unwrap();
-            environment = Rc::clone(enclosing);
+        if distance != 0 {
+            environment = self.ancestor(distance - 1)?;
         }
 
         Ok(environment)
