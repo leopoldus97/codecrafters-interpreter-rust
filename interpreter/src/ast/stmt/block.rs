@@ -1,23 +1,25 @@
-use crate::utils::error::Error;
+use std::rc::Rc;
+
+use crate::{scanner::token::Object, utils::error::Error};
 
 use super::Stmt;
 
 pub struct Block {
-    statements: Vec<Box<dyn Stmt>>,
+    statements: Vec<Rc<dyn Stmt>>,
 }
 
 impl Block {
-    pub fn new(statements: Vec<Box<dyn Stmt>>) -> Self {
+    pub fn new(statements: Vec<Rc<dyn Stmt>>) -> Self {
         Self { statements }
     }
 
-    pub fn statements(&self) -> &Vec<Box<dyn Stmt>> {
+    pub fn statements(&self) -> &Vec<Rc<dyn Stmt>> {
         &self.statements
     }
 }
 
 impl Stmt for Block {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_block_stmt(self)
     }
 

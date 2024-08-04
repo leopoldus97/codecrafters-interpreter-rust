@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     ast::expr::Expr,
     scanner::token::{Object, Token},
@@ -8,11 +10,11 @@ use super::Stmt;
 
 pub struct Var {
     name: Token,
-    initializer: Option<Box<dyn Expr<Object>>>,
+    initializer: Option<Rc<dyn Expr>>,
 }
 
 impl Var {
-    pub fn new(name: Token, initializer: Option<Box<dyn Expr<Object>>>) -> Self {
+    pub fn new(name: Token, initializer: Option<Rc<dyn Expr>>) -> Self {
         Self { name, initializer }
     }
 
@@ -20,13 +22,13 @@ impl Var {
         &self.name
     }
 
-    pub fn initializer(&self) -> &Option<Box<dyn Expr<Object>>> {
+    pub fn initializer(&self) -> &Option<Rc<dyn Expr>> {
         &self.initializer
     }
 }
 
 impl Stmt for Var {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_var_stmt(self)
     }
 

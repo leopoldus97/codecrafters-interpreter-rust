@@ -1,14 +1,20 @@
-use crate::{scanner::token::Token, utils::error::Error};
+use std::rc::Rc;
+
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::Error,
+};
 
 use super::Expr;
 
-pub struct Assign<R> {
+#[derive(Clone)]
+pub struct Assign {
     name: Token,
-    value: Box<dyn Expr<R>>,
+    value: Rc<dyn Expr>,
 }
 
-impl<R> Assign<R> {
-    pub fn new(name: Token, value: Box<dyn Expr<R>>) -> Self {
+impl Assign {
+    pub fn new(name: Token, value: Rc<dyn Expr>) -> Self {
         Self { name, value }
     }
 
@@ -16,13 +22,13 @@ impl<R> Assign<R> {
         &self.name
     }
 
-    pub fn value(&self) -> &dyn Expr<R> {
+    pub fn value(&self) -> &dyn Expr {
         self.value.as_ref()
     }
 }
 
-impl<R: 'static> Expr<R> for Assign<R> {
-    fn accept(&self, visitor: &mut dyn super::Visitor<R>) -> Result<R, Error> {
+impl Expr for Assign {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_assign_expr(self)
     }
 

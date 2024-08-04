@@ -1,7 +1,11 @@
-use crate::{scanner::token::Token, utils::error::Error};
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::Error,
+};
 
 use super::Expr;
 
+#[derive(Clone)]
 pub struct Variable {
     name: Token,
 }
@@ -16,8 +20,8 @@ impl Variable {
     }
 }
 
-impl<R: 'static> Expr<R> for Variable {
-    fn accept(&self, visitor: &mut dyn super::Visitor<R>) -> Result<R, Error> {
+impl Expr for Variable {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_variable_expr(self)
     }
 

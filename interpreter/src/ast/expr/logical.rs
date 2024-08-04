@@ -1,15 +1,20 @@
-use crate::{scanner::token::Token, utils::error::Error};
+use std::rc::Rc;
+
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::Error,
+};
 
 use super::Expr;
 
-pub struct Logical<R> {
-    pub left: Box<dyn Expr<R>>,
+pub struct Logical {
+    pub left: Rc<dyn Expr>,
     pub operator: Token,
-    pub right: Box<dyn Expr<R>>,
+    pub right: Rc<dyn Expr>,
 }
 
-impl<R> Logical<R> {
-    pub fn new(left: Box<dyn Expr<R>>, operator: Token, right: Box<dyn Expr<R>>) -> Self {
+impl Logical {
+    pub fn new(left: Rc<dyn Expr>, operator: Token, right: Rc<dyn Expr>) -> Self {
         Self {
             left,
             operator,
@@ -17,7 +22,7 @@ impl<R> Logical<R> {
         }
     }
 
-    pub fn left(&self) -> &dyn Expr<R> {
+    pub fn left(&self) -> &dyn Expr {
         self.left.as_ref()
     }
 
@@ -25,13 +30,13 @@ impl<R> Logical<R> {
         &self.operator
     }
 
-    pub fn right(&self) -> &dyn Expr<R> {
+    pub fn right(&self) -> &dyn Expr {
         self.right.as_ref()
     }
 }
 
-impl<R: 'static> Expr<R> for Logical<R> {
-    fn accept(&self, visitor: &mut dyn super::Visitor<R>) -> Result<R, Error> {
+impl Expr for Logical {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_logical_expr(self)
     }
 

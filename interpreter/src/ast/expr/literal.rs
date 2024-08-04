@@ -16,8 +16,8 @@ impl Literal {
     }
 }
 
-impl<R: 'static> Expr<R> for Literal {
-    fn accept(&self, visitor: &mut dyn super::Visitor<R>) -> Result<R, Error> {
+impl Expr for Literal {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_literal_expr(self)
     }
 

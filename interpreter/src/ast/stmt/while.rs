@@ -1,18 +1,20 @@
+use std::rc::Rc;
+
 use crate::{ast::expr::Expr, scanner::token::Object, utils::error::Error};
 
 use super::Stmt;
 
 pub struct While {
-    condition: Box<dyn Expr<Object>>,
-    body: Box<dyn Stmt>,
+    condition: Rc<dyn Expr>,
+    body: Rc<dyn Stmt>,
 }
 
 impl While {
-    pub fn new(condition: Box<dyn Expr<Object>>, body: Box<dyn Stmt>) -> Self {
+    pub fn new(condition: Rc<dyn Expr>, body: Rc<dyn Stmt>) -> Self {
         Self { condition, body }
     }
 
-    pub fn condition(&self) -> &dyn Expr<Object> {
+    pub fn condition(&self) -> &dyn Expr {
         self.condition.as_ref()
     }
 
@@ -22,7 +24,7 @@ impl While {
 }
 
 impl Stmt for While {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_while_stmt(self)
     }
 

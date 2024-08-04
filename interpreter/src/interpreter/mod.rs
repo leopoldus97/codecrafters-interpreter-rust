@@ -2,7 +2,13 @@ pub mod callable;
 pub mod environment;
 mod error;
 
-use std::{cell::RefCell, ops::Neg, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    hash::{Hash, Hasher},
+    ops::Neg,
+    rc::Rc,
+};
 
 use callable::{clock::ClockFn, Callable, Fun};
 use environment::Environment;
@@ -19,20 +25,48 @@ use crate::{
             r#while::While, var::Var, Stmt,
         },
     },
-    scanner::{token::Object, token_type::TokenType},
+    scanner::{
+        token::{Object, Token},
+        token_type::TokenType,
+    },
     utils::error::{Error, Return, RuntimeError},
 };
 
-#[derive(Clone, PartialEq)]
+struct ExprKey {
+    expr: Rc<dyn Expr>,
+}
+
+impl PartialEq for ExprKey {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.expr, &other.expr)
+    }
+}
+
+impl Eq for ExprKey {}
+
+impl Hash for ExprKey {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.expr).hash(state);
+    }
+}
+
+impl ExprKey {
+    fn new(expr: Rc<dyn Expr>) -> Self {
+        Self { expr }
+    }
+}
+
 pub struct Interpreter {
     environment: Rc<RefCell<Environment>>,
     globals: Rc<RefCell<Environment>>,
+    locals: HashMap<ExprKey, u8>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         let globals = Rc::new(RefCell::new(Environment::new(None)));
         let environment = Rc::clone(&globals);
+        let locals = HashMap::new();
 
         globals.borrow_mut().define(
             String::from("clock"),
@@ -42,12 +76,13 @@ impl Interpreter {
         Self {
             environment,
             globals,
+            locals,
         }
     }
 
-    pub fn interpret(&mut self, statements: Vec<Box<dyn Stmt>>) {
+    pub fn interpret(&mut self, statements: Vec<Rc<dyn Stmt>>) {
         for statement in statements {
-            if let Err(e) = execute(statement.as_ref(), self) {
+            if let Err(e) = self.execute(statement.as_ref()) {
                 match e {
                     Error::Runtime(e) => {
                         if let crate::utils::error::Runtime::RuntimeError(error) = e {
@@ -62,34 +97,71 @@ impl Interpreter {
 
     fn execute_block(
         &mut self,
-        statements: &Vec<Box<dyn Stmt>>,
+        statements: &Vec<Rc<dyn Stmt>>,
         environment: Rc<RefCell<Environment>>,
-    ) -> Result<(), Error> {
+    ) -> Result<Object, Error> {
         let previous = Rc::clone(&self.environment);
         self.environment = environment;
         for statement in statements {
-            if let Err(e) = execute(statement.as_ref(), self) {
+            if let Err(e) = self.execute(statement.as_ref()) {
                 self.environment = previous;
                 return Err(e);
             }
         }
         self.environment = previous;
-        Ok(())
+        Ok(Object::Nil)
+    }
+
+    fn evaluate(&mut self, expr: &dyn Expr) -> Result<Object, Error> {
+        expr.accept(self)
+    }
+
+    fn execute(&mut self, stmt: &dyn Stmt) -> Result<Object, Error> {
+        stmt.accept(self)
+    }
+
+    pub fn resolve(&mut self, expr: Rc<dyn Expr>, depth: u8) -> Result<Object, Error> {
+        let key = ExprKey::new(expr);
+        self.locals.insert(key, depth);
+        Ok(Object::Nil)
+    }
+
+    fn look_up_variable(&self, name: &Token, expr: Rc<dyn Expr>) -> Result<Object, Error> {
+        let key = ExprKey::new(expr);
+        if let Some(distance) = self.locals.get(&key) {
+            self.environment
+                .borrow()
+                .get_at(*distance as usize, name.lexeme().to_owned())
+        } else {
+            self.globals.borrow().get(name)
+        }
     }
 }
 
-impl expr::Visitor<Object> for Interpreter {
-    fn visit_assign_expr(&mut self, expr: &Assign<Object>) -> Result<Object, Error> {
-        let value = evaluate(expr.value(), self)?;
-        self.environment
-            .borrow_mut()
-            .assign(expr.name(), value.clone())?;
+impl expr::Visitor for Interpreter {
+    fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Error> {
+        let value = self.evaluate(expr.value())?;
+        let key = ExprKey::new(Rc::new(expr.clone()));
+
+        let distance = self.locals.get(&key);
+        if let Some(distance) = distance {
+            self.environment.borrow_mut().assign_at(
+                *distance as usize,
+                expr.name(),
+                value.to_owned(),
+            )?;
+        } else {
+            self.globals
+                .borrow_mut()
+                .assign(expr.name(), value.to_owned())?;
+        }
+
         Ok(value)
     }
 
-    fn visit_binary_expr(&mut self, expr: &Binary<Object>) -> Result<Object, Error> {
-        let left = evaluate(expr.left(), self)?;
-        let right = evaluate(expr.right(), self)?;
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<Object, Error> {
+        let left = self.evaluate(expr.left())?;
+        let right = self.evaluate(expr.right())?;
 
         match expr.operator().token_type() {
             TokenType::Minus => {
@@ -202,13 +274,13 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_call_expr(&mut self, expr: &Call<Object>) -> Result<Object, Error> {
-        let callee = evaluate(expr.callee(), self)?;
+    fn visit_call_expr(&mut self, expr: &Call) -> Result<Object, Error> {
+        let callee = self.evaluate(expr.callee())?;
 
         let arguments = expr
             .arguments()
             .iter()
-            .map(|arg| evaluate(arg.as_ref(), self))
+            .map(|arg| self.evaluate(arg.as_ref()))
             .collect::<Result<Vec<Object>, Error>>()?;
 
         if let Object::Callable(callee) = callee {
@@ -237,16 +309,16 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_grouping_expr(&mut self, expr: &Grouping<Object>) -> Result<Object, Error> {
-        evaluate(expr.expression(), self)
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
+        self.evaluate(expr.expression())
     }
 
     fn visit_literal_expr(&mut self, expr: &Literal) -> Result<Object, Error> {
         Ok(expr.value().to_owned())
     }
 
-    fn visit_logical_expr(&mut self, expr: &Logical<Object>) -> Result<Object, Error> {
-        let left = evaluate(expr.left(), self)?;
+    fn visit_logical_expr(&mut self, expr: &Logical) -> Result<Object, Error> {
+        let left = self.evaluate(expr.left())?;
 
         if expr.operator().token_type() == &TokenType::Or {
             if left.is_truthy() {
@@ -256,11 +328,11 @@ impl expr::Visitor<Object> for Interpreter {
             return Ok(left);
         }
 
-        evaluate(expr.right(), self)
+        self.evaluate(expr.right())
     }
 
-    fn visit_unary_expr(&mut self, expr: &Unary<Object>) -> Result<Object, Error> {
-        let right = evaluate(expr.right(), self)?;
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Error> {
+        let right = self.evaluate(expr.right())?;
 
         let result = match expr.operator().token_type() {
             TokenType::Minus => {
@@ -284,54 +356,51 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
-        self.environment
-            .borrow()
-            .get(expr.name())
-            .map(|v| v.to_owned())
+        self.look_up_variable(expr.name(), Rc::new(expr.clone()))
     }
 }
 
 impl stmt::Visitor for Interpreter {
-    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<(), Error> {
+    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<Object, Error> {
         let inner_environment = Environment::new(Some(Rc::clone(&self.environment)));
         let inner_environment = Rc::new(RefCell::new(inner_environment));
         self.execute_block(stmt.statements(), inner_environment)
     }
 
-    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<(), Error> {
-        evaluate(stmt.expression(), self)?;
-        Ok(())
+    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Error> {
+        self.evaluate(stmt.expression())?;
+        Ok(Object::Nil)
     }
 
-    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<(), Error> {
+    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<Object, Error> {
         let function = callable::Function::new(stmt.clone(), Rc::clone(&self.environment));
         let callable = Object::Callable(Box::new(Fun::Function(function)));
         self.environment
             .borrow_mut()
             .define(stmt.name().lexeme().to_owned(), callable);
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_if_stmt(&mut self, stmt: &If) -> Result<(), Error> {
-        let condition = evaluate(stmt.condition(), self)?;
+    fn visit_if_stmt(&mut self, stmt: &If) -> Result<Object, Error> {
+        let condition = self.evaluate(stmt.condition())?;
         if condition.is_truthy() {
-            execute(stmt.then_branch(), self)?;
+            self.execute(stmt.then_branch())?;
         } else if let Some(else_branch) = stmt.else_branch() {
-            execute(else_branch, self)?;
+            self.execute(else_branch)?;
         }
 
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<(), Error> {
-        let value = evaluate(stmt.expression(), self)?;
+    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<Object, Error> {
+        let value = self.evaluate(stmt.expression())?;
         println!("{}", value);
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_return_stmt(&mut self, stmt: &stmt::r#return::Return) -> Result<(), Error> {
+    fn visit_return_stmt(&mut self, stmt: &stmt::r#return::Return) -> Result<Object, Error> {
         let value = if let Some(value) = stmt.value() {
-            evaluate(value.as_ref(), self)?
+            self.evaluate(value.as_ref())?
         } else {
             Object::Nil
         };
@@ -339,9 +408,9 @@ impl stmt::Visitor for Interpreter {
         Err(Error::Runtime(Return::new(value).into()))
     }
 
-    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<(), Error> {
+    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<Object, Error> {
         let value = if let Some(initializer) = stmt.initializer() {
-            evaluate(initializer.as_ref(), self)?
+            self.evaluate(initializer.as_ref())?
         } else {
             Object::Nil
         };
@@ -349,15 +418,15 @@ impl stmt::Visitor for Interpreter {
         self.environment
             .borrow_mut()
             .define(stmt.name().lexeme().to_owned(), value);
-        Ok(())
+        Ok(Object::Nil)
     }
 
-    fn visit_while_stmt(&mut self, stmt: &While) -> Result<(), Error> {
-        while evaluate(stmt.condition(), self)?.is_truthy() {
-            execute(stmt.body(), self)?;
+    fn visit_while_stmt(&mut self, stmt: &While) -> Result<Object, Error> {
+        while self.evaluate(stmt.condition())?.is_truthy() {
+            self.execute(stmt.body())?;
         }
 
-        Ok(())
+        Ok(Object::Nil)
     }
 }
 
@@ -365,14 +434,6 @@ impl Default for Interpreter {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn evaluate(expr: &dyn Expr<Object>, visitor: &mut Interpreter) -> Result<Object, Error> {
-    expr.accept(visitor)
-}
-
-fn execute(stmt: &dyn Stmt, visitor: &mut Interpreter) -> Result<(), Error> {
-    stmt.accept(visitor)
 }
 
 fn is_equal(a: Object, b: Object) -> bool {

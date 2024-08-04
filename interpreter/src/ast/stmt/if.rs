@@ -1,18 +1,20 @@
+use std::rc::Rc;
+
 use crate::{ast::expr::Expr, scanner::token::Object, utils::error::Error};
 
 use super::Stmt;
 
 pub struct If {
-    condition: Box<dyn Expr<Object>>,
-    then_branch: Box<dyn Stmt>,
-    else_branch: Option<Box<dyn Stmt>>,
+    condition: Rc<dyn Expr>,
+    then_branch: Rc<dyn Stmt>,
+    else_branch: Option<Rc<dyn Stmt>>,
 }
 
 impl If {
     pub fn new(
-        condition: Box<dyn Expr<Object>>,
-        then_branch: Box<dyn Stmt>,
-        else_branch: Option<Box<dyn Stmt>>,
+        condition: Rc<dyn Expr>,
+        then_branch: Rc<dyn Stmt>,
+        else_branch: Option<Rc<dyn Stmt>>,
     ) -> Self {
         Self {
             condition,
@@ -21,7 +23,7 @@ impl If {
         }
     }
 
-    pub fn condition(&self) -> &dyn Expr<Object> {
+    pub fn condition(&self) -> &dyn Expr {
         self.condition.as_ref()
     }
 
@@ -35,7 +37,7 @@ impl If {
 }
 
 impl Stmt for If {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<(), Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_if_stmt(self)
     }
 

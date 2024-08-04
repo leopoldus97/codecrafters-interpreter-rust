@@ -79,7 +79,7 @@ pub mod clock {
 
     impl std::fmt::Display for ClockFn {
         fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            write!(f, "<fn clock>")
+            write!(f, "<fn native clock>")
         }
     }
 }

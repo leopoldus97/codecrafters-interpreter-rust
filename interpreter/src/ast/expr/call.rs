@@ -1,15 +1,20 @@
-use crate::{scanner::token::Token, utils::error::Error};
+use std::rc::Rc;
+
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::Error,
+};
 
 use super::Expr;
 
-pub struct Call<R> {
-    callee: Box<dyn Expr<R>>,
+pub struct Call {
+    callee: Rc<dyn Expr>,
     paren: Token,
-    arguments: Vec<Box<dyn Expr<R>>>,
+    arguments: Vec<Rc<dyn Expr>>,
 }
 
-impl<R> Call<R> {
-    pub fn new(callee: Box<dyn Expr<R>>, paren: Token, arguments: Vec<Box<dyn Expr<R>>>) -> Self {
+impl Call {
+    pub fn new(callee: Rc<dyn Expr>, paren: Token, arguments: Vec<Rc<dyn Expr>>) -> Self {
         Self {
             callee,
             paren,
@@ -17,7 +22,7 @@ impl<R> Call<R> {
         }
     }
 
-    pub fn callee(&self) -> &dyn Expr<R> {
+    pub fn callee(&self) -> &dyn Expr {
         self.callee.as_ref()
     }
 
@@ -25,13 +30,13 @@ impl<R> Call<R> {
         &self.paren
     }
 
-    pub fn arguments(&self) -> &Vec<Box<dyn Expr<R>>> {
+    pub fn arguments(&self) -> &Vec<Rc<dyn Expr>> {
         &self.arguments
     }
 }
 
-impl<R: 'static> Expr<R> for Call<R> {
-    fn accept(&self, visitor: &mut dyn super::Visitor<R>) -> Result<R, Error> {
+impl Expr for Call {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_call_expr(self)
     }
 

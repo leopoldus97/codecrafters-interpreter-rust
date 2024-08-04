@@ -57,6 +57,26 @@ impl Environment {
         Err(Error::Runtime(error.into()))
     }
 
+    pub fn get_at(&self, distance: usize, name: String) -> Result<Object, Error> {
+        Ok(self
+            .ancestor(distance)?
+            .borrow_mut()
+            .values
+            .get(&name)
+            .unwrap()
+            .to_owned())
+    }
+
+    pub fn ancestor(&self, distance: usize) -> Result<Rc<RefCell<Environment>>, Error> {
+        let mut environment = Rc::clone(self.enclosing.as_ref().unwrap());
+
+        if distance != 0 {
+            environment = self.ancestor(distance - 1)?;
+        }
+
+        Ok(environment)
+    }
+
     pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), Error> {
         if self.values.contains_key(name.lexeme()) {
             self.values.insert(name.lexeme().to_string(), value);
@@ -81,5 +101,13 @@ impl Environment {
             name.to_owned(),
         );
         Err(Error::Runtime(error.into()))
+    }
+
+    pub fn assign_at(&mut self, distance: usize, name: &Token, value: Object) -> Result<(), Error> {
+        self.ancestor(distance)?
+            .borrow_mut()
+            .values
+            .insert(name.lexeme().to_string(), value);
+        Ok(())
     }
 }
