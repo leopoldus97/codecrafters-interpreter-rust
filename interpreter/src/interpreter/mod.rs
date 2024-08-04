@@ -2,7 +2,13 @@ pub mod callable;
 pub mod environment;
 mod error;
 
-use std::{cell::RefCell, collections::HashMap, hash::{Hash, Hasher}, ops::Neg, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    hash::{Hash, Hasher},
+    ops::Neg,
+    rc::Rc,
+};
 
 use callable::{clock::ClockFn, Callable, Fun};
 use environment::Environment;
@@ -46,7 +52,9 @@ impl Hash for ExprKey {
 
 impl ExprKey {
     fn new(expr: &dyn Expr<Object>) -> Self {
-        Self { expr: Rc::new(expr) }
+        Self {
+            expr: Rc::new(expr),
+        }
     }
 }
 
@@ -123,7 +131,9 @@ impl Interpreter {
     fn look_up_variable(&self, name: &Token, expr: &dyn Expr<Object>) -> Result<Object, Error> {
         let key = ExprKey::new(expr);
         if let Some(distance) = self.locals.get(&key) {
-            self.environment.borrow().get_at(*distance as usize, name.lexeme().to_owned())
+            self.environment
+                .borrow()
+                .get_at(*distance as usize, name.lexeme().to_owned())
         } else {
             self.globals.borrow().get(name)
         }
@@ -137,11 +147,15 @@ impl expr::Visitor<Object> for Interpreter {
 
         let distance = self.locals.get(&key);
         if let Some(distance) = distance {
-            self.environment
-                .borrow_mut()
-                .assign_at(*distance as usize, expr.name(), value.to_owned());
+            self.environment.borrow_mut().assign_at(
+                *distance as usize,
+                expr.name(),
+                value.to_owned(),
+            );
         } else {
-            self.globals.borrow_mut().assign(expr.name(), value.to_owned());
+            self.globals
+                .borrow_mut()
+                .assign(expr.name(), value.to_owned());
         }
 
         Ok(value)
