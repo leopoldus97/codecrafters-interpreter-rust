@@ -1,4 +1,5 @@
 pub mod block;
+pub mod class;
 pub mod expression;
 pub mod function;
 pub mod r#if;
@@ -8,9 +9,11 @@ pub mod var;
 pub mod r#while;
 
 // program        → declaration* EOF ;
-// declaration    → funDecl
+// declaration    → classDecl
+//                | funDecl
 //                | varDecl
 //                | statement ;
+// classDecl      → "class" IDENTIFIER "{" function* "}" ;
 // funDecl        → "fun" function ;
 // function       → IDENTIFIER "(" parameters? ")" block ;
 // parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
@@ -44,6 +47,7 @@ pub trait Stmt: Any {
 
 pub trait Visitor {
     fn visit_block_stmt(&mut self, stmt: &block::Block) -> Result<Object, Error>;
+    fn visit_class_stmt(&mut self, stmt: &class::Class) -> Result<Object, Error>;
     fn visit_expression_stmt(&mut self, stmt: &expression::Expression) -> Result<Object, Error>;
     fn visit_function_stmt(&mut self, stmt: &function::Function) -> Result<Object, Error>;
     fn visit_if_stmt(&mut self, stmt: &r#if::If) -> Result<Object, Error>;

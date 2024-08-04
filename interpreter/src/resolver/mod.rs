@@ -7,8 +7,7 @@ use crate::{
             logical::Logical, unary::Unary, variable::Variable, Expr,
         },
         stmt::{
-            self, block::Block, expression::Expression, function::Function, print::Print, r#if::If,
-            r#return::Return, r#while::While, var::Var, Stmt,
+            self, block::Block, class::Class, expression::Expression, function::Function, r#if::If, print::Print, r#return::Return, var::Var, r#while::While, Stmt
         },
     },
     interpreter::Interpreter,
@@ -174,6 +173,12 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         self.begin_scope();
         self.resolve(stmt.statements())?;
         self.end_scope();
+        Ok(Object::Nil)
+    }
+    
+    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Error> {
+        self.declare(stmt.name());
+        self.define(stmt.name());
         Ok(Object::Nil)
     }
 

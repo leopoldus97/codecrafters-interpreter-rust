@@ -5,12 +5,10 @@ use std::rc::Rc;
 use crate::{
     ast::{
         expr::{
-            assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal,
-            logical::Logical, unary::Unary, variable::Variable, Expr,
+            assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping, literal::Literal, logical::Logical, set::Set, unary::Unary, variable::Variable, Expr
         },
         stmt::{
-            block::Block, expression::Expression, function::Function, print::Print, r#if::If,
-            r#return::Return, r#while::While, var::Var, Stmt,
+            block::Block, class::Class, expression::Expression, function::Function, r#if::If, print::Print, r#return::Return, var::Var, r#while::While, Stmt
         },
     },
     parser::error::error,
@@ -119,7 +117,9 @@ impl Parser {
 
 impl Parser {
     fn declaration(&mut self) -> Option<Rc<dyn Stmt>> {
-        let result = if self.match_token_types(&[TokenType::Fun]) {
+        let result = if self.match_token_types(&[TokenType::Class]) {
+            self.class_declaration()
+        } else if self.match_token_types(&[TokenType::Fun]) {
             self.function("function")
         } else if self.match_token_types(&[TokenType::Var]) {
             self.var_declaration()
@@ -134,6 +134,23 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn class_declaration(&mut self) -> Result<Rc<dyn Stmt>, ParseError> {
+        let name = self.consume(TokenType::Identifier, "Expect class name.")?;
+        self.consume(TokenType::LeftBrace, "Expect '{' before class body.")?;
+
+        let mut methods = vec![];
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            let method = self.function("method")?;
+            if let Some(function) = method.as_any().downcast_ref::<Function>() {
+                methods.push(function.to_owned());
+            }
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after class body.")?;
+
+        Ok(Rc::new(Class::new(name, methods, None)))
     }
 
     fn statement(&mut self) -> Result<Rc<dyn Stmt>, ParseError> {

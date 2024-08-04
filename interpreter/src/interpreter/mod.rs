@@ -21,8 +21,8 @@ use crate::{
             logical::Logical, unary::Unary, variable::Variable, Expr,
         },
         stmt::{
-            self, block::Block, expression::Expression, function::Function, print::Print, r#if::If,
-            r#while::While, var::Var, Stmt,
+            self, block::Block, class::Class, expression::Expression, function::Function,
+            print::Print, r#if::If, r#while::While, var::Var, Stmt,
         },
     },
     scanner::{
@@ -365,6 +365,15 @@ impl stmt::Visitor for Interpreter {
         let inner_environment = Environment::new(Some(Rc::clone(&self.environment)));
         let inner_environment = Rc::new(RefCell::new(inner_environment));
         self.execute_block(stmt.statements(), inner_environment)
+    }
+
+    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Error> {
+        self.environment
+            .borrow_mut()
+            .define(stmt.name().lexeme().to_owned(), Object::Nil);
+        let klass = Object::Class(stmt.name().lexeme().to_owned());
+        self.environment.borrow_mut().assign(stmt.name(), klass)?;
+        Ok(Object::Nil)
     }
 
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Error> {
