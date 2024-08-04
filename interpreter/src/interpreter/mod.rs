@@ -33,7 +33,7 @@ use crate::{
 };
 
 struct ExprKey {
-    expr: Rc<dyn Expr<Object>>,
+    expr: Rc<dyn Expr>,
 }
 
 impl PartialEq for ExprKey {
@@ -114,7 +114,7 @@ impl Interpreter {
         Ok(Object::Nil)
     }
 
-    fn evaluate(&mut self, expr: &dyn Expr<Object>) -> Result<Object, Error> {
+    fn evaluate(&mut self, expr: &dyn Expr) -> Result<Object, Error> {
         expr.accept(self)
     }
 
@@ -140,8 +140,8 @@ impl Interpreter {
     }
 }
 
-impl expr::Visitor<Object> for Interpreter {
-    fn visit_assign_expr(&mut self, expr: &Assign<Object>) -> Result<Object, Error> {
+impl expr::Visitor for Interpreter {
+    fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Error> {
         let value = self.evaluate(expr.value())?;
         let key = ExprKey::new(expr);
 
@@ -161,7 +161,7 @@ impl expr::Visitor<Object> for Interpreter {
         Ok(value)
     }
 
-    fn visit_binary_expr(&mut self, expr: &Binary<Object>) -> Result<Object, Error> {
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<Object, Error> {
         let left = self.evaluate(expr.left())?;
         let right = self.evaluate(expr.right())?;
 
@@ -276,7 +276,7 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_call_expr(&mut self, expr: &Call<Object>) -> Result<Object, Error> {
+    fn visit_call_expr(&mut self, expr: &Call) -> Result<Object, Error> {
         let callee = self.evaluate(expr.callee())?;
 
         let arguments = expr
@@ -311,7 +311,7 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_grouping_expr(&mut self, expr: &Grouping<Object>) -> Result<Object, Error> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
         self.evaluate(expr.expression())
     }
 
@@ -319,7 +319,7 @@ impl expr::Visitor<Object> for Interpreter {
         Ok(expr.value().to_owned())
     }
 
-    fn visit_logical_expr(&mut self, expr: &Logical<Object>) -> Result<Object, Error> {
+    fn visit_logical_expr(&mut self, expr: &Logical) -> Result<Object, Error> {
         let left = self.evaluate(expr.left())?;
 
         if expr.operator().token_type() == &TokenType::Or {
@@ -333,7 +333,7 @@ impl expr::Visitor<Object> for Interpreter {
         self.evaluate(expr.right())
     }
 
-    fn visit_unary_expr(&mut self, expr: &Unary<Object>) -> Result<Object, Error> {
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Error> {
         let right = self.evaluate(expr.right())?;
 
         let result = match expr.operator().token_type() {

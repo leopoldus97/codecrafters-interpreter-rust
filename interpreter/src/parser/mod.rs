@@ -196,14 +196,14 @@ impl Parser {
         };
 
         let condition = if !self.check(&TokenType::Semicolon) {
-            self.expression::<Object>()?
+            self.expression()?
         } else {
             Box::new(Literal::new(Object::Bool(true)))
         };
         self.consume(TokenType::Semicolon, "Expect ';' after loop condition.")?;
 
         let increment = if !self.check(&TokenType::RightParen) {
-            Some(self.expression::<Object>()?)
+            Some(self.expression()?)
         } else {
             None
         };
@@ -226,7 +226,7 @@ impl Parser {
 
     fn if_statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
         self.consume(TokenType::LeftParen, "Expect '(' after 'if'.")?;
-        let condition = self.expression::<Object>()?;
+        let condition = self.expression()?;
         self.consume(TokenType::RightParen, "Expect ')' after if condition.")?;
 
         let then_branch = self.statement()?;
@@ -240,7 +240,7 @@ impl Parser {
     }
 
     fn print_statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
-        let value = self.expression::<Object>()?;
+        let value = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
         Ok(Box::new(Print::new(value)))
     }
@@ -248,7 +248,7 @@ impl Parser {
     fn return_statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
         let keyword = self.previous();
         let value = if !self.check(&TokenType::Semicolon) {
-            Some(self.expression::<Object>()?)
+            Some(self.expression()?)
         } else {
             None
         };
@@ -259,7 +259,7 @@ impl Parser {
     fn var_declaration(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
         let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
         let initializer = if self.match_token_types(&[TokenType::Equal]) {
-            Some(self.expression::<Object>()?)
+            Some(self.expression()?)
         } else {
             None
         };
@@ -272,14 +272,14 @@ impl Parser {
 
     fn while_statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
         self.consume(TokenType::LeftParen, "Expect '(' after 'while'.")?;
-        let condition = self.expression::<Object>()?;
+        let condition = self.expression()?;
         self.consume(TokenType::RightParen, "Expect ')' after condition.")?;
         let body = self.statement()?;
         Ok(Box::new(While::new(condition, body)))
     }
 
     fn expression_statement(&mut self) -> Result<Box<dyn Stmt>, ParseError> {
-        let expr = self.expression::<Object>()?;
+        let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
         Ok(Box::new(Expression::new(expr)))
     }
@@ -300,15 +300,15 @@ impl Parser {
     }
 
     fn expression<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        self.assignment::<R>()
+        self.assignment()
     }
 
     fn assignment<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        let expr = self.or::<R>()?;
+        let expr = self.or()?;
 
         if self.match_token_types(&[TokenType::Equal]) {
             let equals = self.previous();
-            let value = self.assignment::<R>()?;
+            let value = self.assignment()?;
 
             if let Some(variable) = expr.as_any().downcast_ref::<Variable>() {
                 let name = variable.name().to_owned();
@@ -323,19 +323,19 @@ impl Parser {
     }
 
     fn or<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        let mut expr = self.and::<R>()?;
+        let mut expr = self.and()?;
 
         while self.match_token_types(&[TokenType::Or]) {
             let operator = self.previous();
-            let right = self.and::<R>()?;
             expr = Box::new(Logical::new(expr, operator, right));
+            let right = self.and()?;
         }
 
         Ok(expr)
     }
 
     fn and<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        let mut expr = self.equality::<R>()?;
+        let mut expr = self.equality()?;
 
         while self.match_token_types(&[TokenType::And]) {
             let operator = self.previous();
@@ -347,19 +347,19 @@ impl Parser {
     }
 
     fn equality<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        let mut expr = self.comparison::<R>()?;
+        let mut expr = self.comparison()?;
 
         while self.match_token_types(&[TokenType::BangEqual, TokenType::EqualEqual]) {
             let operator = self.previous();
-            let right = self.comparison::<R>()?;
             expr = Box::new(Binary::new(expr, operator, right));
+            let right = self.comparison()?;
         }
 
         Ok(expr)
     }
 
     fn comparison<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        let mut expr = self.term::<R>()?;
+        let mut expr = self.term()?;
 
         while self.match_token_types(&[
             TokenType::Greater,
@@ -368,32 +368,32 @@ impl Parser {
             TokenType::LessEqual,
         ]) {
             let operator = self.previous();
-            let right = self.term::<R>()?;
             expr = Box::new(Binary::new(expr, operator, right));
+            let right = self.term()?;
         }
 
         Ok(expr)
     }
 
     fn term<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        let mut expr = self.factor::<R>()?;
+        let mut expr = self.factor()?;
 
         while self.match_token_types(&[TokenType::Minus, TokenType::Plus]) {
             let operator = self.previous();
-            let right = self.factor::<R>()?;
             expr = Box::new(Binary::new(expr, operator, right));
+            let right = self.factor()?;
         }
 
         Ok(expr)
     }
 
     fn factor<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        let mut expr = self.unary::<R>()?;
+        let mut expr = self.unary()?;
 
         while self.match_token_types(&[TokenType::Slash, TokenType::Star]) {
             let operator = self.previous();
-            let right = self.unary::<R>()?;
             expr = Box::new(Binary::new(expr, operator, right));
+            let right = self.unary()?;
         }
 
         Ok(expr)
@@ -402,19 +402,19 @@ impl Parser {
     fn unary<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
         if self.match_token_types(&[TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous();
-            let right = self.unary::<R>()?;
             Ok(Box::new(Unary::new(operator, right)))
+            let right = self.unary()?;
         } else {
             self.call()
         }
     }
 
     fn call<R: 'static>(&mut self) -> Result<Box<dyn Expr<R>>, ParseError> {
-        let mut expr = self.primary::<R>()?;
+        let mut expr = self.primary()?;
 
         loop {
             if self.match_token_types(&[TokenType::LeftParen]) {
-                expr = self.finish_call::<R>(expr)?;
+                expr = self.finish_call(expr)?;
             } else {
                 break;
             }
@@ -438,7 +438,7 @@ impl Parser {
                     );
                 }
 
-                arguments.push(self.expression::<R>()?);
+                arguments.push(self.expression()?);
 
                 if !self.match_token_types(&[TokenType::Comma]) {
                     break;

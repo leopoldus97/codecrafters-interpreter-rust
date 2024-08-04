@@ -1,15 +1,18 @@
-use crate::{scanner::token::Token, utils::error::Error};
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::Error,
+};
 
 use super::Expr;
 
-pub struct Call<R> {
     callee: Box<dyn Expr<R>>,
+pub struct Call {
     paren: Token,
     arguments: Vec<Box<dyn Expr<R>>>,
 }
 
-impl<R> Call<R> {
     pub fn new(callee: Box<dyn Expr<R>>, paren: Token, arguments: Vec<Box<dyn Expr<R>>>) -> Self {
+impl Call {
         Self {
             callee,
             paren,

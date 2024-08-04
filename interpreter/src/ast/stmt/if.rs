@@ -21,7 +21,7 @@ impl If {
         }
     }
 
-    pub fn condition(&self) -> &dyn Expr<Object> {
+    pub fn condition(&self) -> &dyn Expr {
         self.condition.as_ref()
     }
 

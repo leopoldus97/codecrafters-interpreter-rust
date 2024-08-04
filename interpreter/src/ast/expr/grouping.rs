@@ -1,23 +1,23 @@
-use crate::utils::error::Error;
+use crate::{scanner::token::Object, utils::error::Error};
 
 use super::Expr;
 
-pub struct Grouping<R> {
     expression: Box<dyn Expr<R>>,
+pub struct Grouping {
 }
 
-impl<R> Grouping<R> {
     pub fn new(expression: Box<dyn Expr<R>>) -> Self {
+impl Grouping {
         Self { expression }
     }
 
-    pub fn expression(&self) -> &dyn Expr<R> {
+    pub fn expression(&self) -> &dyn Expr {
         self.expression.as_ref()
     }
 }
 
-impl<R: 'static> Expr<R> for Grouping<R> {
-    fn accept(&self, visitor: &mut dyn super::Visitor<R>) -> Result<R, Error> {
+impl Expr for Grouping {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_grouping_expr(self)
     }
 

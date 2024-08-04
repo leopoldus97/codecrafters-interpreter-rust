@@ -11,7 +11,7 @@ impl Print {
         Self { expression }
     }
 
-    pub fn expression(&self) -> &dyn Expr<Object> {
+    pub fn expression(&self) -> &dyn Expr {
         self.expression.as_ref()
     }
 }

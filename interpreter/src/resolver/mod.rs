@@ -49,7 +49,7 @@ impl<'a> Resolver<'a> {
         stmt.accept(self)
     }
 
-    fn resolve_expression(&mut self, expr: &dyn Expr<Object>) -> Result<Object, Error> {
+    fn resolve_expression(&mut self, expr: &dyn Expr) -> Result<Object, Error> {
         expr.accept(self)
     }
 
@@ -109,20 +109,20 @@ impl<'a> Resolver<'a> {
     }
 }
 
-impl<'a> expr::Visitor<Object> for Resolver<'a> {
-    fn visit_assign_expr(&mut self, expr: &Assign<Object>) -> Result<Object, Error> {
+impl<'a> expr::Visitor for Resolver<'a> {
+    fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Error> {
         self.resolve_expression(expr.value())?;
         self.resolve_local(expr, expr.name());
         Ok(Object::Nil)
     }
 
-    fn visit_binary_expr(&mut self, expr: &Binary<Object>) -> Result<Object, Error> {
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<Object, Error> {
         self.resolve_expression(expr.left())?;
         self.resolve_expression(expr.right())?;
         Ok(Object::Nil)
     }
 
-    fn visit_call_expr(&mut self, expr: &Call<Object>) -> Result<Object, Error> {
+    fn visit_call_expr(&mut self, expr: &Call) -> Result<Object, Error> {
         self.resolve_expression(expr.callee())?;
         for argument in expr.arguments() {
             self.resolve_expression(argument.as_ref())?;
@@ -130,7 +130,7 @@ impl<'a> expr::Visitor<Object> for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_grouping_expr(&mut self, expr: &Grouping<Object>) -> Result<Object, Error> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
         self.resolve_expression(expr.expression())?;
         Ok(Object::Nil)
     }
@@ -139,13 +139,13 @@ impl<'a> expr::Visitor<Object> for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_logical_expr(&mut self, expr: &Logical<Object>) -> Result<Object, Error> {
+    fn visit_logical_expr(&mut self, expr: &Logical) -> Result<Object, Error> {
         self.resolve_expression(expr.left())?;
         self.resolve_expression(expr.right())?;
         Ok(Object::Nil)
     }
 
-    fn visit_unary_expr(&mut self, expr: &Unary<Object>) -> Result<Object, Error> {
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Error> {
         self.resolve_expression(expr.right())?;
         Ok(Object::Nil)
     }
