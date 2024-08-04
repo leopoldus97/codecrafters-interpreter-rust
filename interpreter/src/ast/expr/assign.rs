@@ -7,6 +7,7 @@ use crate::{
 
 use super::Expr;
 
+#[derive(Clone)]
 pub struct Assign {
     name: Token,
     value: Rc<dyn Expr>,

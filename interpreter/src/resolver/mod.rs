@@ -86,7 +86,8 @@ impl<'a> Resolver<'a> {
     fn resolve_local(&mut self, expr: Rc<dyn Expr>, name: &Token) {
         for (i, scope) in self.scopes.iter().enumerate().rev() {
             if scope.contains_key(name.lexeme()) {
-                self.interpreter
+                let _ = self
+                    .interpreter
                     .resolve(expr, (self.scopes.len() - 1 - i) as u8);
                 return;
             }
@@ -102,7 +103,7 @@ impl<'a> Resolver<'a> {
             self.declare(param);
             self.define(param);
         }
-        self.resolve(&function.body()).unwrap();
+        self.resolve(function.body()).unwrap();
         self.end_scope();
 
         self.current_function = enclosing_function;
@@ -192,8 +193,8 @@ impl<'a> stmt::Visitor for Resolver<'a> {
     fn visit_if_stmt(&mut self, stmt: &If) -> Result<Object, Error> {
         self.resolve_expression(stmt.condition())?;
         self.resolve_statement(stmt.then_branch())?;
-        if let Some(ref else_branch) = stmt.else_branch() {
-            self.resolve_statement(*else_branch)?;
+        if let Some(else_branch) = stmt.else_branch() {
+            self.resolve_statement(else_branch)?;
         }
         Ok(Object::Nil)
     }
@@ -222,7 +223,7 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         if let Some(ref initializer) = stmt.initializer() {
             self.resolve_expression(initializer.as_ref())?;
         }
-        self.define(&stmt.name());
+        self.define(stmt.name());
         Ok(Object::Nil)
     }
 

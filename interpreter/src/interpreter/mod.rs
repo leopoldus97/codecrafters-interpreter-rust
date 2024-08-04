@@ -149,11 +149,11 @@ impl expr::Visitor for Interpreter {
                 *distance as usize,
                 expr.name(),
                 value.to_owned(),
-            );
+            )?;
         } else {
             self.globals
                 .borrow_mut()
-                .assign(expr.name(), value.to_owned());
+                .assign(expr.name(), value.to_owned())?;
         }
 
         Ok(value)

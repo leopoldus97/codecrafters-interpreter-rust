@@ -5,6 +5,7 @@ use crate::{
 
 use super::Expr;
 
+#[derive(Clone)]
 pub struct Variable {
     name: Token,
 }
