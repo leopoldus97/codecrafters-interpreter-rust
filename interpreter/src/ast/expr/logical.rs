@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     scanner::token::{Object, Token},
     utils::error::Error,
@@ -5,14 +7,14 @@ use crate::{
 
 use super::Expr;
 
-    pub left: Box<dyn Expr<R>>,
 pub struct Logical {
+    pub left: Rc<dyn Expr>,
     pub operator: Token,
-    pub right: Box<dyn Expr<R>>,
+    pub right: Rc<dyn Expr>,
 }
 
-    pub fn new(left: Box<dyn Expr<R>>, operator: Token, right: Box<dyn Expr<R>>) -> Self {
 impl Logical {
+    pub fn new(left: Rc<dyn Expr>, operator: Token, right: Rc<dyn Expr>) -> Self {
         Self {
             left,
             operator,

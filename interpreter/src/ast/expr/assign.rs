@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     scanner::token::{Object, Token},
     utils::error::Error,
@@ -7,11 +9,11 @@ use super::Expr;
 
 pub struct Assign {
     name: Token,
-    value: Box<dyn Expr<R>>,
+    value: Rc<dyn Expr>,
 }
 
-    pub fn new(name: Token, value: Box<dyn Expr<R>>) -> Self {
 impl Assign {
+    pub fn new(name: Token, value: Rc<dyn Expr>) -> Self {
         Self { name, value }
     }
 

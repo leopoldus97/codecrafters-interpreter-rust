@@ -1,14 +1,16 @@
+use std::rc::Rc;
+
 use crate::{ast::expr::Expr, scanner::token::Object, utils::error::Error};
 
 use super::Stmt;
 
 pub struct While {
-    condition: Box<dyn Expr<Object>>,
-    body: Box<dyn Stmt>,
+    condition: Rc<dyn Expr>,
+    body: Rc<dyn Stmt>,
 }
 
 impl While {
-    pub fn new(condition: Box<dyn Expr<Object>>, body: Box<dyn Stmt>) -> Self {
+    pub fn new(condition: Rc<dyn Expr>, body: Rc<dyn Stmt>) -> Self {
         Self { condition, body }
     }
 

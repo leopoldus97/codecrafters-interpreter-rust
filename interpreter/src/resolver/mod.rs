@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{
@@ -38,7 +38,7 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    pub fn resolve(&mut self, statements: &Vec<Box<dyn Stmt>>) -> Result<Object, Error> {
+    pub fn resolve(&mut self, statements: &Vec<Rc<dyn Stmt>>) -> Result<Object, Error> {
         for stmt in statements {
             self.resolve_statement(stmt.as_ref())?;
         }
@@ -83,7 +83,7 @@ impl<'a> Resolver<'a> {
         scope.insert(name.lexeme().to_owned(), true);
     }
 
-    fn resolve_local(&mut self, expr: &dyn Expr<Object>, name: &Token) {
+    fn resolve_local(&mut self, expr: Rc<dyn Expr>, name: &Token) {
         for (i, scope) in self.scopes.iter().enumerate().rev() {
             if scope.contains_key(name.lexeme()) {
                 self.interpreter
@@ -112,7 +112,7 @@ impl<'a> Resolver<'a> {
 impl<'a> expr::Visitor for Resolver<'a> {
     fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Error> {
         self.resolve_expression(expr.value())?;
-        self.resolve_local(expr, expr.name());
+        self.resolve_local(Rc::new(expr.clone()), expr.name());
         Ok(Object::Nil)
     }
 
@@ -163,7 +163,7 @@ impl<'a> expr::Visitor for Resolver<'a> {
             eprintln!("Cannot read local variable in its own initializer.");
         }
 
-        self.resolve_local(expr, expr.name());
+        self.resolve_local(Rc::new(expr.clone()), expr.name());
         Ok(Object::Nil)
     }
 }

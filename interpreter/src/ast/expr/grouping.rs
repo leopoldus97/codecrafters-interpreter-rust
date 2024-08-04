@@ -1,13 +1,15 @@
+use std::rc::Rc;
+
 use crate::{scanner::token::Object, utils::error::Error};
 
 use super::Expr;
 
-    expression: Box<dyn Expr<R>>,
 pub struct Grouping {
+    expression: Rc<dyn Expr>,
 }
 
-    pub fn new(expression: Box<dyn Expr<R>>) -> Self {
 impl Grouping {
+    pub fn new(expression: Rc<dyn Expr>) -> Self {
         Self { expression }
     }
 

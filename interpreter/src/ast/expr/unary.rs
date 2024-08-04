@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     scanner::token::{Object, Token},
     utils::error::Error,
@@ -7,11 +9,11 @@ use super::Expr;
 
 pub struct Unary {
     operator: Token,
-    right: Box<dyn Expr<R>>,
+    right: Rc<dyn Expr>,
 }
 
-    pub fn new(operator: Token, right: Box<dyn Expr<R>>) -> Self {
 impl Unary {
+    pub fn new(operator: Token, right: Rc<dyn Expr>) -> Self {
         Self { operator, right }
     }
 

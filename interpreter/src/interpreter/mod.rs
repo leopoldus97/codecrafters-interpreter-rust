@@ -51,10 +51,8 @@ impl Hash for ExprKey {
 }
 
 impl ExprKey {
-    fn new(expr: &dyn Expr<Object>) -> Self {
-        Self {
-            expr: Rc::new(expr),
-        }
+    fn new(expr: Rc<dyn Expr>) -> Self {
+        Self { expr }
     }
 }
 
@@ -82,7 +80,7 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret(&mut self, statements: Vec<Box<dyn Stmt>>) {
+    pub fn interpret(&mut self, statements: Vec<Rc<dyn Stmt>>) {
         for statement in statements {
             if let Err(e) = self.execute(statement.as_ref()) {
                 match e {
@@ -99,7 +97,7 @@ impl Interpreter {
 
     fn execute_block(
         &mut self,
-        statements: &Vec<Box<dyn Stmt>>,
+        statements: &Vec<Rc<dyn Stmt>>,
         environment: Rc<RefCell<Environment>>,
     ) -> Result<Object, Error> {
         let previous = Rc::clone(&self.environment);
@@ -122,13 +120,13 @@ impl Interpreter {
         stmt.accept(self)
     }
 
-    pub fn resolve(&mut self, expr: &dyn Expr<Object>, depth: u8) -> Result<Object, Error> {
+    pub fn resolve(&mut self, expr: Rc<dyn Expr>, depth: u8) -> Result<Object, Error> {
         let key = ExprKey::new(expr);
         self.locals.insert(key, depth);
         Ok(Object::Nil)
     }
 
-    fn look_up_variable(&self, name: &Token, expr: &dyn Expr<Object>) -> Result<Object, Error> {
+    fn look_up_variable(&self, name: &Token, expr: Rc<dyn Expr>) -> Result<Object, Error> {
         let key = ExprKey::new(expr);
         if let Some(distance) = self.locals.get(&key) {
             self.environment
@@ -143,7 +141,7 @@ impl Interpreter {
 impl expr::Visitor for Interpreter {
     fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Error> {
         let value = self.evaluate(expr.value())?;
-        let key = ExprKey::new(expr);
+        let key = ExprKey::new(Rc::new(expr.clone()));
 
         let distance = self.locals.get(&key);
         if let Some(distance) = distance {
@@ -358,7 +356,7 @@ impl expr::Visitor for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
-        self.look_up_variable(expr.name(), expr)
+        self.look_up_variable(expr.name(), Rc::new(expr.clone()))
     }
 }
 

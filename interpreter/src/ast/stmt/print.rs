@@ -1,13 +1,15 @@
+use std::rc::Rc;
+
 use crate::{ast::expr::Expr, scanner::token::Object, utils::error::Error};
 
 use super::Stmt;
 
 pub struct Print {
-    expression: Box<dyn Expr<Object>>,
+    expression: Rc<dyn Expr>,
 }
 
 impl Print {
-    pub fn new(expression: Box<dyn Expr<Object>>) -> Self {
+    pub fn new(expression: Rc<dyn Expr>) -> Self {
         Self { expression }
     }
 

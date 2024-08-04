@@ -11,7 +11,7 @@ use super::Stmt;
 pub struct Function {
     name: Token,
     params: Vec<Token>,
-    body: Rc<Vec<Box<dyn Stmt>>>,
+    body: Rc<Vec<Rc<dyn Stmt>>>,
 }
 
 impl PartialEq for Function {
@@ -23,7 +23,7 @@ impl PartialEq for Function {
 }
 
 impl Function {
-    pub fn new(name: Token, params: Vec<Token>, body: Vec<Box<dyn Stmt>>) -> Self {
+    pub fn new(name: Token, params: Vec<Token>, body: Vec<Rc<dyn Stmt>>) -> Self {
         Self {
             name,
             params,
@@ -39,7 +39,7 @@ impl Function {
         &self.params
     }
 
-    pub fn body(&self) -> &Vec<Box<dyn Stmt>> {
+    pub fn body(&self) -> &Vec<Rc<dyn Stmt>> {
         &self.body
     }
 }

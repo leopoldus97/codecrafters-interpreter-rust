@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     ast::expr::Expr,
     scanner::token::{Object, Token},
@@ -8,11 +10,11 @@ use super::Stmt;
 
 pub struct Return {
     keyword: Token,
-    value: Option<Box<dyn Expr<Object>>>,
+    value: Option<Rc<dyn Expr>>,
 }
 
 impl Return {
-    pub fn new(keyword: Token, value: Option<Box<dyn Expr<Object>>>) -> Self {
+    pub fn new(keyword: Token, value: Option<Rc<dyn Expr>>) -> Self {
         Self { keyword, value }
     }
 
@@ -20,7 +22,7 @@ impl Return {
         &self.keyword
     }
 
-    pub fn value(&self) -> &Option<Box<dyn Expr<Object>>> {
+    pub fn value(&self) -> &Option<Rc<dyn Expr>> {
         &self.value
     }
 }
