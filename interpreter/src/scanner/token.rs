@@ -1,4 +1,4 @@
-use crate::interpreter::callable::{Fun, Instance};
+use crate::interpreter::callable::{Class, Fun, Instance};
 
 use super::token_type::TokenType;
 
@@ -60,7 +60,8 @@ pub enum Object {
     Num(f64),
     Bool(bool),
     Callable(Box<Fun>),
-    Class(Instance),
+    Class(Class),
+    Instance(Instance),
     Nil,
 }
 
@@ -72,6 +73,7 @@ impl std::fmt::Display for Object {
             Object::Bool(b) => write!(f, "{}", b),
             Object::Callable(c) => write!(f, "{}", c),
             Object::Class(c) => write!(f, "{}", c),
+            Object::Instance(i) => write!(f, "{}", i),
             Object::Nil => write!(f, "nil"),
         }
     }

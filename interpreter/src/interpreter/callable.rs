@@ -88,13 +88,19 @@ pub mod clock {
 pub struct Function {
     declaration: stmt::function::Function,
     closure: Rc<RefCell<Environment>>,
+    is_initializer: bool,
 }
 
 impl Function {
-    pub fn new(declaration: stmt::function::Function, closure: Rc<RefCell<Environment>>) -> Self {
+    pub fn new(
+        declaration: stmt::function::Function,
+        closure: Rc<RefCell<Environment>>,
+        is_initializer: bool,
+    ) -> Self {
         Self {
             declaration,
             closure,
+            is_initializer,
         }
     }
 
@@ -104,6 +110,16 @@ impl Function {
 
     pub fn closure(&self) -> Rc<RefCell<Environment>> {
         Rc::clone(&self.closure)
+    }
+
+    fn bind(&self, instance: &Instance) -> Self {
+        let mut environment = Environment::new(Some(Rc::clone(&self.closure)));
+        environment.define(String::from("this"), Object::Instance(instance.clone()));
+        Self::new(
+            self.declaration.to_owned(),
+            Rc::new(RefCell::new(environment)),
+            self.is_initializer,
+        )
     }
 }
 
@@ -130,9 +146,25 @@ impl Callable for Function {
         if let Err(Error::Runtime(Runtime::Return(r))) =
             interpreter.execute_block(self.declaration.body(), environment)
         {
+            if self.is_initializer {
+                return self
+                    .closure
+                    .borrow()
+                    .get_at(0, String::from("this"))
+                    .unwrap();
+            }
+
             return r.value().to_owned();
         }
 
+        if self.is_initializer {
+            return self
+                .closure
+                .borrow()
+                .get_at(0, String::from("this"))
+                .unwrap()
+                .to_owned();
+        }
         Object::Nil
     }
 }
@@ -150,7 +182,7 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn new(klass: Class) -> Self {
+    fn new(klass: Class) -> Self {
         let fields = HashMap::new();
         Self { klass, fields }
     }
@@ -160,8 +192,11 @@ impl Instance {
     }
 
     pub fn get(&self, name: &Token) -> Result<Object, Error> {
+        let method = self.klass.find_method(name.lexeme());
         if self.fields.contains_key(name.lexeme()) {
             Ok(self.fields.get(name.lexeme()).unwrap().to_owned())
+        } else if let Some(method) = method {
+            Ok(Object::Callable(Box::new(Fun::Function(method.bind(self)))))
         } else {
             Err(Error::Runtime(
                 RuntimeError::new(
@@ -187,25 +222,41 @@ impl std::fmt::Display for Instance {
 #[derive(Clone, PartialEq)]
 pub struct Class {
     name: String,
+    methods: HashMap<String, Function>,
 }
 
 impl Class {
-    pub fn new(name: String) -> Self {
-        Self { name }
+    pub fn new(name: String, methods: HashMap<String, Function>) -> Self {
+        Self { name, methods }
     }
 
     pub fn name(&self) -> &String {
         &self.name
     }
+
+    fn find_method(&self, name: &str) -> Option<&Function> {
+        self.methods.get(name)
+    }
 }
 
 impl Callable for Class {
     fn arity(&self) -> usize {
-        0
+        let initializer = self.find_method("init");
+        if let Some(init) = initializer {
+            init.arity()
+        } else {
+            0
+        }
     }
 
-    fn call(&self, _: &mut Interpreter, _: Vec<Object>) -> Object {
-        Object::Class(Instance::new(self.to_owned()))
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Object {
+        let instance = Instance::new(self.to_owned());
+        let initializer = self.find_method("init");
+        if let Some(init) = initializer {
+            init.bind(&instance).call(interpreter, arguments);
+        }
+
+        Object::Instance(instance)
     }
 }
 

@@ -6,7 +6,8 @@ use crate::{
     ast::{
         expr::{
             assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
-            literal::Literal, logical::Logical, set::Set, unary::Unary, variable::Variable, Expr,
+            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
+            variable::Variable, Expr,
         },
         stmt::{
             block::Block, class::Class, expression::Expression, function::Function, print::Print,
@@ -488,6 +489,8 @@ impl Parser {
             Ok(Rc::new(Literal::new(Object::Nil)))
         } else if self.match_token_types(&[TokenType::Number, TokenType::String]) {
             Ok(Rc::new(Literal::new(self.previous().literal().clone())))
+        } else if self.match_token_types(&[TokenType::This]) {
+            Ok(Rc::new(This::new(self.previous())))
         } else if self.match_token_types(&[TokenType::Identifier]) {
             Ok(Rc::new(Variable::new(self.previous().to_owned())))
         } else if self.match_token_types(&[TokenType::LeftParen]) {

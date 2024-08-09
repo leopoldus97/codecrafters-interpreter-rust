@@ -6,6 +6,7 @@ pub mod grouping;
 pub mod literal;
 pub mod logical;
 pub mod set;
+pub mod this;
 pub mod unary;
 pub mod variable;
 
@@ -42,6 +43,7 @@ pub trait Visitor {
     fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<Object, Error>;
     fn visit_logical_expr(&mut self, expr: &logical::Logical) -> Result<Object, Error>;
     fn visit_set_expr(&mut self, expr: &set::Set) -> Result<Object, Error>;
+    fn visit_this_expr(&mut self, expr: &this::This) -> Result<Object, Error>;
     fn visit_unary_expr(&mut self, expr: &unary::Unary) -> Result<Object, Error>;
     fn visit_variable_expr(&mut self, expr: &variable::Variable) -> Result<Object, Error>;
 }
