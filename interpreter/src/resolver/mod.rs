@@ -3,12 +3,13 @@ use std::{collections::HashMap, rc::Rc};
 use crate::{
     ast::{
         expr::{
-            self, assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal,
-            logical::Logical, unary::Unary, variable::Variable, Expr,
+            self, assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
+            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
+            variable::Variable, Expr,
         },
         stmt::{
-            self, block::Block, expression::Expression, function::Function, print::Print, r#if::If,
-            r#return::Return, r#while::While, var::Var, Stmt,
+            self, block::Block, class::Class, expression::Expression, function::Function,
+            print::Print, r#if::If, r#return::Return, r#while::While, var::Var, Stmt,
         },
     },
     interpreter::Interpreter,
@@ -20,12 +21,21 @@ use crate::{
 enum FunctionType {
     None,
     Function,
+    Initializer,
+    Method,
+}
+
+#[derive(Clone, PartialEq)]
+enum ClassType {
+    None,
+    Class,
 }
 
 pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 impl<'a> Resolver<'a> {
@@ -35,6 +45,7 @@ impl<'a> Resolver<'a> {
             interpreter,
             scopes,
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -131,6 +142,11 @@ impl<'a> expr::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
+    fn visit_get_expr(&mut self, expr: &Get) -> Result<Object, Error> {
+        self.resolve_expression(expr.object().as_ref())?;
+        Ok(Object::Nil)
+    }
+
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
         self.resolve_expression(expr.expression())?;
         Ok(Object::Nil)
@@ -143,6 +159,22 @@ impl<'a> expr::Visitor for Resolver<'a> {
     fn visit_logical_expr(&mut self, expr: &Logical) -> Result<Object, Error> {
         self.resolve_expression(expr.left())?;
         self.resolve_expression(expr.right())?;
+        Ok(Object::Nil)
+    }
+
+    fn visit_set_expr(&mut self, expr: &Set) -> Result<Object, Error> {
+        self.resolve_expression(expr.value().as_ref())?;
+        self.resolve_expression(expr.object().as_ref())?;
+        Ok(Object::Nil)
+    }
+
+    fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Error> {
+        if self.current_class == ClassType::None {
+            eprintln!("Cannot use 'this' outside of a class.");
+            return Ok(Object::Nil);
+        }
+
+        self.resolve_local(Rc::new(expr.clone()), expr.keyword());
         Ok(Object::Nil)
     }
 
@@ -174,6 +206,34 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         self.begin_scope();
         self.resolve(stmt.statements())?;
         self.end_scope();
+        Ok(Object::Nil)
+    }
+
+    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Error> {
+        let enclosing_class = self.current_class.clone();
+        self.current_class = ClassType::Class;
+
+        self.declare(stmt.name());
+        self.define(stmt.name());
+
+        self.begin_scope();
+        self.scopes
+            .last_mut()
+            .unwrap()
+            .insert(String::from("this"), true);
+
+        for method in stmt.methods() {
+            let mut declaration = FunctionType::Method;
+            if method.name().lexeme() == "init" {
+                declaration = FunctionType::Initializer;
+            }
+
+            self.resolve_function(method, declaration)
+        }
+
+        self.end_scope();
+
+        self.current_class = enclosing_class;
         Ok(Object::Nil)
     }
 
@@ -213,6 +273,13 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         }
 
         if let Some(ref value) = stmt.value() {
+            if self.current_function == FunctionType::Initializer {
+                eprintln!(
+                    "{} Cannot return a value from an initializer.",
+                    stmt.keyword()
+                );
+            }
+
             self.resolve_expression(value.as_ref())?;
         }
         Ok(Object::Nil)

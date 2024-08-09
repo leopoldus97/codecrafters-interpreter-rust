@@ -17,12 +17,13 @@ use error::runtime_error;
 use crate::{
     ast::{
         expr::{
-            self, assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal,
-            logical::Logical, unary::Unary, variable::Variable, Expr,
+            self, assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
+            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
+            variable::Variable, Expr,
         },
         stmt::{
-            self, block::Block, expression::Expression, function::Function, print::Print, r#if::If,
-            r#while::While, var::Var, Stmt,
+            self, block::Block, class::Class, expression::Expression, function::Function,
+            print::Print, r#if::If, r#while::While, var::Var, Stmt,
         },
     },
     scanner::{
@@ -309,6 +310,21 @@ impl expr::Visitor for Interpreter {
         }
     }
 
+    fn visit_get_expr(&mut self, expr: &Get) -> Result<Object, Error> {
+        let object = self.evaluate(expr.object().as_ref())?;
+        if let Object::Instance(instance) = object {
+            instance.get(expr.name())
+        } else {
+            Err(Error::Runtime(
+                RuntimeError::new(
+                    String::from("Only instances have properties"),
+                    expr.name().to_owned(),
+                )
+                .into(),
+            ))
+        }
+    }
+
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
         self.evaluate(expr.expression())
     }
@@ -329,6 +345,28 @@ impl expr::Visitor for Interpreter {
         }
 
         self.evaluate(expr.right())
+    }
+
+    fn visit_set_expr(&mut self, expr: &Set) -> Result<Object, Error> {
+        let object = self.evaluate(expr.object().as_ref())?;
+
+        if let Object::Instance(mut instance) = object {
+            let value = self.evaluate(expr.value().as_ref())?;
+            instance.set(expr.name(), value.to_owned());
+            Ok(value)
+        } else {
+            Err(Error::Runtime(
+                RuntimeError::new(
+                    String::from("Only instances have fields"),
+                    expr.name().to_owned(),
+                )
+                .into(),
+            ))
+        }
+    }
+
+    fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Error> {
+        self.look_up_variable(expr.keyword(), Rc::new(expr.clone()))
     }
 
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Error> {
@@ -367,13 +405,34 @@ impl stmt::Visitor for Interpreter {
         self.execute_block(stmt.statements(), inner_environment)
     }
 
+    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Error> {
+        let name = stmt.name().lexeme();
+        self.environment
+            .borrow_mut()
+            .define(name.to_owned(), Object::Nil);
+        let mut methods: HashMap<String, callable::Function> = HashMap::new();
+        for method in stmt.methods() {
+            let is_initializer = method.name().lexeme() == "init";
+            let function = callable::Function::new(
+                method.clone(),
+                Rc::clone(&self.environment),
+                is_initializer,
+            );
+            methods.insert(method.name().lexeme().to_owned(), function);
+        }
+        let klass = callable::Class::new(name.to_owned(), methods);
+        let klass = Object::Class(klass);
+        self.environment.borrow_mut().assign(stmt.name(), klass)?;
+        Ok(Object::Nil)
+    }
+
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Error> {
         self.evaluate(stmt.expression())?;
         Ok(Object::Nil)
     }
 
     fn visit_function_stmt(&mut self, stmt: &Function) -> Result<Object, Error> {
-        let function = callable::Function::new(stmt.clone(), Rc::clone(&self.environment));
+        let function = callable::Function::new(stmt.clone(), Rc::clone(&self.environment), false);
         let callable = Object::Callable(Box::new(Fun::Function(function)));
         self.environment
             .borrow_mut()

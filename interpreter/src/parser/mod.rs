@@ -5,12 +5,13 @@ use std::rc::Rc;
 use crate::{
     ast::{
         expr::{
-            assign::Assign, binary::Binary, call::Call, grouping::Grouping, literal::Literal,
-            logical::Logical, unary::Unary, variable::Variable, Expr,
+            assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
+            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
+            variable::Variable, Expr,
         },
         stmt::{
-            block::Block, expression::Expression, function::Function, print::Print, r#if::If,
-            r#return::Return, r#while::While, var::Var, Stmt,
+            block::Block, class::Class, expression::Expression, function::Function, print::Print,
+            r#if::If, r#return::Return, r#while::While, var::Var, Stmt,
         },
     },
     parser::error::error,
@@ -119,7 +120,9 @@ impl Parser {
 
 impl Parser {
     fn declaration(&mut self) -> Option<Rc<dyn Stmt>> {
-        let result = if self.match_token_types(&[TokenType::Fun]) {
+        let result = if self.match_token_types(&[TokenType::Class]) {
+            self.class_declaration()
+        } else if self.match_token_types(&[TokenType::Fun]) {
             self.function("function")
         } else if self.match_token_types(&[TokenType::Var]) {
             self.var_declaration()
@@ -134,6 +137,23 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn class_declaration(&mut self) -> Result<Rc<dyn Stmt>, ParseError> {
+        let name = self.consume(TokenType::Identifier, "Expect class name.")?;
+        self.consume(TokenType::LeftBrace, "Expect '{' before class body.")?;
+
+        let mut methods = vec![];
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            let method = self.function("method")?;
+            if let Some(function) = method.as_any().downcast_ref::<Function>() {
+                methods.push(function.to_owned());
+            }
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after class body.")?;
+
+        Ok(Rc::new(Class::new(name, methods, None)))
     }
 
     fn statement(&mut self) -> Result<Rc<dyn Stmt>, ParseError> {
@@ -315,6 +335,13 @@ impl Parser {
             if let Some(variable) = expr.as_any().downcast_ref::<Variable>() {
                 let name = variable.name().to_owned();
                 return Ok(Rc::new(Assign::new(name, value)));
+            } else if let Some(get) = expr.as_any().downcast_ref::<Get>() {
+                let get = get.to_owned();
+                return Ok(Rc::new(Set::new(
+                    get.object(),
+                    get.name().to_owned(),
+                    value,
+                )));
             }
 
             let error = self.error(&equals, "Invalid assignment target.");
@@ -417,6 +444,10 @@ impl Parser {
         loop {
             if self.match_token_types(&[TokenType::LeftParen]) {
                 expr = self.finish_call(expr)?;
+            } else if self.match_token_types(&[TokenType::Dot]) {
+                let name =
+                    self.consume(TokenType::Identifier, "Expect property name after '.'.")?;
+                expr = Rc::new(Get::new(expr, name));
             } else {
                 break;
             }
@@ -458,6 +489,8 @@ impl Parser {
             Ok(Rc::new(Literal::new(Object::Nil)))
         } else if self.match_token_types(&[TokenType::Number, TokenType::String]) {
             Ok(Rc::new(Literal::new(self.previous().literal().clone())))
+        } else if self.match_token_types(&[TokenType::This]) {
+            Ok(Rc::new(This::new(self.previous())))
         } else if self.match_token_types(&[TokenType::Identifier]) {
             Ok(Rc::new(Variable::new(self.previous().to_owned())))
         } else if self.match_token_types(&[TokenType::LeftParen]) {
