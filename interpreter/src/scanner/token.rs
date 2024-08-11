@@ -1,4 +1,7 @@
-use crate::interpreter::callable::{Class, Fun, Instance};
+use crate::{
+    ast::expr::variable::Variable,
+    interpreter::callable::{Class, Fun, Instance},
+};
 
 use super::token_type::TokenType;
 
@@ -62,6 +65,7 @@ pub enum Object {
     Callable(Box<Fun>),
     Class(Class),
     Instance(Instance),
+    Variable(Box<Variable>),
     Nil,
 }
 
@@ -74,6 +78,7 @@ impl std::fmt::Display for Object {
             Object::Callable(c) => write!(f, "{}", c),
             Object::Class(c) => write!(f, "{}", c),
             Object::Instance(i) => write!(f, "{}", i),
+            Object::Variable(v) => write!(f, "{}", v),
             Object::Nil => write!(f, "nil"),
         }
     }

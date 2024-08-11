@@ -18,8 +18,8 @@ use crate::{
     ast::{
         expr::{
             self, assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
-            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
-            variable::Variable, Expr,
+            literal::Literal, logical::Logical, set::Set, super_keyword::Super, this::This,
+            unary::Unary, variable::Variable, Expr,
         },
         stmt::{
             self, block::Block, class::Class, expression::Expression, function::Function,
@@ -365,6 +365,46 @@ impl expr::Visitor for Interpreter {
         }
     }
 
+    fn visit_super_expr(&mut self, expr: &Super) -> Result<Object, Error> {
+        let key = ExprKey::new(Rc::new(expr.clone()));
+        let distance = self.locals.get(&key).unwrap();
+        let superclass = self
+            .environment
+            .borrow()
+            .get_at(*distance as usize, String::from("super"))?;
+
+        let object = self
+            .environment
+            .borrow()
+            .get_at(*distance as usize - 1, String::from("this"))?;
+
+        let instance = match object {
+            Object::Instance(instance) => Some(instance),
+            _ => None,
+        };
+
+        let lexeme = expr.method().lexeme();
+
+        let method = match superclass {
+            Object::Class(class) => class.find_method(lexeme).map(|f| f.clone()),
+            _ => None,
+        };
+
+        if let Some(method) = method {
+            Ok(Object::Callable(Box::new(Fun::Function(
+                method.bind(&instance.unwrap()),
+            ))))
+        } else {
+            return Err(Error::Runtime(
+                RuntimeError::new(
+                    format!("Undefined property '{}'.", lexeme),
+                    expr.method().to_owned(),
+                )
+                .into(),
+            ));
+        }
+    }
+
     fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Error> {
         self.look_up_variable(expr.keyword(), Rc::new(expr.clone()))
     }
@@ -406,10 +446,35 @@ impl stmt::Visitor for Interpreter {
     }
 
     fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Error> {
-        let name = stmt.name().lexeme();
+        let superclass = if let Some(superclass) = stmt.superclass() {
+            let name = superclass.name().to_owned();
+            let superclass = self.evaluate(superclass)?;
+            let sc = match superclass {
+                Object::Class(class) => Ok(class),
+                _ => Err(Error::Runtime(
+                    RuntimeError::new(String::from("Superclass must be a class."), name).into(),
+                )),
+            }?;
+            Some(Box::new(sc))
+        } else {
+            None
+        };
+
+        let lexeme = stmt.name().lexeme();
         self.environment
             .borrow_mut()
-            .define(name.to_owned(), Object::Nil);
+            .define(lexeme.to_owned(), Object::Nil);
+
+        if let Some(superclass) = stmt.superclass() {
+            self.environment = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(
+                &self.environment,
+            )))));
+            self.environment.borrow_mut().define(
+                String::from("super"),
+                Object::Variable(Box::new(superclass.clone())),
+            )
+        }
+
         let mut methods: HashMap<String, callable::Function> = HashMap::new();
         for method in stmt.methods() {
             let is_initializer = method.name().lexeme() == "init";
@@ -420,8 +485,14 @@ impl stmt::Visitor for Interpreter {
             );
             methods.insert(method.name().lexeme().to_owned(), function);
         }
-        let klass = callable::Class::new(name.to_owned(), methods);
+        let klass = callable::Class::new(lexeme.to_owned(), methods, superclass);
         let klass = Object::Class(klass);
+
+        if stmt.superclass().is_some() {
+            let enclosing = self.environment.borrow().enclosing.clone().unwrap();
+            self.environment = enclosing;
+        }
+
         self.environment.borrow_mut().assign(stmt.name(), klass)?;
         Ok(Object::Nil)
     }

@@ -4,8 +4,8 @@ use crate::{
     ast::{
         expr::{
             self, assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
-            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
-            variable::Variable, Expr,
+            literal::Literal, logical::Logical, set::Set, super_keyword::Super, this::This,
+            unary::Unary, variable::Variable, Expr,
         },
         stmt::{
             self, block::Block, class::Class, expression::Expression, function::Function,
@@ -29,6 +29,7 @@ enum FunctionType {
 enum ClassType {
     None,
     Class,
+    Subclass,
 }
 
 pub struct Resolver<'a> {
@@ -168,6 +169,17 @@ impl<'a> expr::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
+    fn visit_super_expr(&mut self, expr: &Super) -> Result<Object, Error> {
+        if self.current_class == ClassType::None {
+            eprintln!("Can't use 'super' outside of a class.");
+        } else if self.current_class != ClassType::Subclass {
+            eprintln!("Can't use 'super' in a class with no superclass.");
+        }
+
+        self.resolve_local(Rc::new(expr.clone()), expr.keyword());
+        Ok(Object::Nil)
+    }
+
     fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Error> {
         if self.current_class == ClassType::None {
             eprintln!("Cannot use 'this' outside of a class.");
@@ -216,6 +228,22 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         self.declare(stmt.name());
         self.define(stmt.name());
 
+        if let Some(superclass) = stmt.superclass() {
+            if stmt.name().lexeme() == superclass.name().lexeme() {
+                eprintln!("{} A class cannot inherit from itself.", superclass.name());
+            }
+            self.current_class = ClassType::Subclass;
+            self.resolve_expression(superclass)?;
+        }
+
+        if stmt.superclass().is_some() {
+            self.begin_scope();
+            self.scopes
+                .last_mut()
+                .unwrap()
+                .insert(String::from("super"), true);
+        }
+
         self.begin_scope();
         self.scopes
             .last_mut()
@@ -232,6 +260,10 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         }
 
         self.end_scope();
+
+        if stmt.superclass().is_some() {
+            self.end_scope();
+        }
 
         self.current_class = enclosing_class;
         Ok(Object::Nil)

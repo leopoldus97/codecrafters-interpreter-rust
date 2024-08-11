@@ -5,7 +5,7 @@ use crate::{
 
 use super::Expr;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Variable {
     name: Token,
 }
@@ -27,5 +27,11 @@ impl Expr for Variable {
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+}
+
+impl std::fmt::Display for Variable {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.name)
     }
 }

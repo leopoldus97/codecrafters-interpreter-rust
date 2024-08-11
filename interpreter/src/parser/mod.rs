@@ -6,8 +6,8 @@ use crate::{
     ast::{
         expr::{
             assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
-            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
-            variable::Variable, Expr,
+            literal::Literal, logical::Logical, set::Set, super_keyword::Super, this::This,
+            unary::Unary, variable::Variable, Expr,
         },
         stmt::{
             block::Block, class::Class, expression::Expression, function::Function, print::Print,
@@ -141,6 +141,14 @@ impl Parser {
 
     fn class_declaration(&mut self) -> Result<Rc<dyn Stmt>, ParseError> {
         let name = self.consume(TokenType::Identifier, "Expect class name.")?;
+
+        let superclass = if self.match_token_types(&[TokenType::Less]) {
+            self.consume(TokenType::Identifier, "Expect superclass name.")?;
+            Some(Variable::new(self.previous()))
+        } else {
+            None
+        };
+
         self.consume(TokenType::LeftBrace, "Expect '{' before class body.")?;
 
         let mut methods = vec![];
@@ -153,7 +161,7 @@ impl Parser {
 
         self.consume(TokenType::RightBrace, "Expect '}' after class body.")?;
 
-        Ok(Rc::new(Class::new(name, methods, None)))
+        Ok(Rc::new(Class::new(name, methods, superclass)))
     }
 
     fn statement(&mut self) -> Result<Rc<dyn Stmt>, ParseError> {
@@ -489,6 +497,11 @@ impl Parser {
             Ok(Rc::new(Literal::new(Object::Nil)))
         } else if self.match_token_types(&[TokenType::Number, TokenType::String]) {
             Ok(Rc::new(Literal::new(self.previous().literal().clone())))
+        } else if self.match_token_types(&[TokenType::Super]) {
+            let keyword = self.previous();
+            self.consume(TokenType::Dot, "Expect '.' after 'super'.")?;
+            let method = self.consume(TokenType::Identifier, "Expect superclass method name.")?;
+            Ok(Rc::new(Super::new(keyword, method)))
         } else if self.match_token_types(&[TokenType::This]) {
             Ok(Rc::new(This::new(self.previous())))
         } else if self.match_token_types(&[TokenType::Identifier]) {
