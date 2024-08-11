@@ -112,7 +112,7 @@ impl Function {
         Rc::clone(&self.closure)
     }
 
-    fn bind(&self, instance: &Instance) -> Self {
+    pub fn bind(&self, instance: &Instance) -> Self {
         let mut environment = Environment::new(Some(Rc::clone(&self.closure)));
         environment.define(String::from("this"), Object::Instance(instance.clone()));
         Self::new(
@@ -223,19 +223,37 @@ impl std::fmt::Display for Instance {
 pub struct Class {
     name: String,
     methods: HashMap<String, Function>,
+    superclass: Option<Box<Class>>,
 }
 
 impl Class {
-    pub fn new(name: String, methods: HashMap<String, Function>) -> Self {
-        Self { name, methods }
+    pub fn new(
+        name: String,
+        methods: HashMap<String, Function>,
+        superclass: Option<Box<Class>>,
+    ) -> Self {
+        Self {
+            name,
+            methods,
+            superclass,
+        }
     }
 
     pub fn name(&self) -> &String {
         &self.name
     }
 
-    fn find_method(&self, name: &str) -> Option<&Function> {
-        self.methods.get(name)
+    pub fn find_method(&self, name: &str) -> Option<&Function> {
+        match self.methods.get(name) {
+            Some(method) => Some(method),
+            None => {
+                if let Some(superclass) = &self.superclass {
+                    superclass.find_method(name)
+                } else {
+                    None
+                }
+            }
+        }
     }
 }
 
