@@ -386,7 +386,7 @@ impl expr::Visitor for Interpreter {
         let lexeme = expr.method().lexeme();
 
         let method = match superclass {
-            Object::Class(class) => class.find_method(lexeme).map(|f| f.clone()),
+            Object::Class(class) => class.find_method(lexeme).cloned(),
             _ => None,
         };
 
