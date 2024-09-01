@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "tree_walking",
+    "virtual_machine",
 ]
-default-members = ["tree_walking"]
+default-members = ["tree_walking", "virtual_machine"]
 resolver = "2"
