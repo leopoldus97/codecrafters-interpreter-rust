@@ -1,5 +1,5 @@
 [package]
-name = "lox-rs"
+name = "tree_walking"
 version = "0.1.0"
 authors = ["Máté Kiss"]
 edition = "2021"

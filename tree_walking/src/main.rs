@@ -5,7 +5,7 @@ use std::{
     sync::atomic::Ordering,
 };
 
-use lox_rs::{
+use tree_walking::{
     interpreter::Interpreter, parser::Parser, resolver::Resolver, scanner::Scanner, HAD_ERROR,
     HAD_RUNTIME_ERROR,
 };
