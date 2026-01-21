@@ -112,9 +112,9 @@ impl Function {
         Rc::clone(&self.closure)
     }
 
-    pub fn bind(&self, instance: &Instance) -> Self {
+    pub fn bind(&self, instance: Rc<RefCell<Instance>>) -> Self {
         let mut environment = Environment::new(Some(Rc::clone(&self.closure)));
-        environment.define(String::from("this"), Object::Instance(instance.clone()));
+        environment.define(String::from("this"), Object::Instance(instance));
         Self::new(
             self.declaration.to_owned(),
             Rc::new(RefCell::new(environment)),
@@ -151,7 +151,7 @@ impl Callable for Function {
                     .closure
                     .borrow()
                     .get_at(0, String::from("this"))
-                    .unwrap();
+                    .expect("Failed to get 'this' in initializer return");
             }
 
             return r.value().to_owned();
@@ -162,8 +162,7 @@ impl Callable for Function {
                 .closure
                 .borrow()
                 .get_at(0, String::from("this"))
-                .unwrap()
-                .to_owned();
+                .expect("Failed to get 'this' at end of initializer");
         }
         Object::Nil
     }
@@ -182,21 +181,21 @@ pub struct Instance {
 }
 
 impl Instance {
-    fn new(klass: Class) -> Self {
+    pub fn new(klass: Class) -> Rc<RefCell<Self>> {
         let fields = HashMap::new();
-        Self { klass, fields }
+        Rc::new(RefCell::new(Self { klass, fields }))
     }
 
     pub fn klass(&self) -> &Class {
         &self.klass
     }
 
-    pub fn get(&self, name: &Token) -> Result<Object, Error> {
-        let method = self.klass.find_method(name.lexeme());
+    pub fn get(&self, name: &Token) -> Result<Option<Object>, Error> {
         if self.fields.contains_key(name.lexeme()) {
-            Ok(self.fields.get(name.lexeme()).unwrap().to_owned())
-        } else if let Some(method) = method {
-            Ok(Object::Callable(Box::new(Fun::Function(method.bind(self)))))
+            Ok(Some(self.fields.get(name.lexeme()).unwrap().to_owned()))
+        } else if let Some(_method) = self.klass.find_method(name.lexeme()) {
+            // Return None to signal that this is a method (needs binding)
+            Ok(None)
         } else {
             Err(Error::Runtime(
                 RuntimeError::new(
@@ -206,6 +205,10 @@ impl Instance {
                 .into(),
             ))
         }
+    }
+
+    pub fn get_method(&self, name: &str) -> Option<Function> {
+        self.klass.find_method(name).cloned()
     }
 
     pub fn set(&mut self, name: &Token, value: Object) {
@@ -271,7 +274,7 @@ impl Callable for Class {
         let instance = Instance::new(self.to_owned());
         let initializer = self.find_method("init");
         if let Some(init) = initializer {
-            init.bind(&instance).call(interpreter, arguments);
+            init.bind(Rc::clone(&instance)).call(interpreter, arguments);
         }
 
         Object::Instance(instance)

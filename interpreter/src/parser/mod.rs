@@ -176,7 +176,7 @@ impl Parser {
         } else if self.match_token_types(&[TokenType::While]) {
             self.while_statement()
         } else if self.match_token_types(&[TokenType::LeftBrace]) {
-            Ok(Rc::new(Block::new(self.block())))
+            Ok(Rc::new(Block::new(self.block()?)))
         } else {
             self.expression_statement()
         }
@@ -210,7 +210,7 @@ impl Parser {
             TokenType::LeftBrace,
             &format!("Expect '{{' before {} body.", kind),
         )?;
-        let body = self.block();
+        let body = self.block()?;
         Ok(Rc::new(Function::new(name, parameters, body)))
     }
 
@@ -314,7 +314,7 @@ impl Parser {
         Ok(Rc::new(Expression::new(expr)))
     }
 
-    fn block(&mut self) -> Vec<Rc<dyn Stmt>> {
+    fn block(&mut self) -> Result<Vec<Rc<dyn Stmt>>, ParseError> {
         let mut statements: Vec<Rc<dyn Stmt>> = Vec::new();
 
         while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
@@ -324,9 +324,8 @@ impl Parser {
             }
         }
 
-        self.consume(TokenType::RightBrace, "Expect '}' after block.")
-            .unwrap();
-        statements
+        self.consume(TokenType::RightBrace, "Expect '}' after block.")?;
+        Ok(statements)
     }
 
     fn expression(&mut self) -> Result<Rc<dyn Expr>, ParseError> {

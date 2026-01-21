@@ -34,6 +34,9 @@ use crate::{scanner::token::Object, utils::error::Error};
 pub trait Expr: Any {
     fn accept(&self, visitor: &mut dyn Visitor) -> Result<Object, Error>;
     fn as_any(&self) -> &dyn Any;
+    fn id(&self) -> u64 {
+        0
+    }
 }
 
 pub trait Visitor {

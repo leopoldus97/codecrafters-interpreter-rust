@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::{
     ast::expr::variable::Variable,
     interpreter::callable::{Class, Fun, Instance},
@@ -57,16 +59,32 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub enum Object {
     Str(String),
     Num(f64),
     Bool(bool),
     Callable(Box<Fun>),
     Class(Class),
-    Instance(Instance),
+    Instance(Rc<RefCell<Instance>>),
     Variable(Box<Variable>),
     Nil,
+}
+
+impl PartialEq for Object {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Object::Str(a), Object::Str(b)) => a == b,
+            (Object::Num(a), Object::Num(b)) => a == b,
+            (Object::Bool(a), Object::Bool(b)) => a == b,
+            (Object::Callable(a), Object::Callable(b)) => a == b,
+            (Object::Class(a), Object::Class(b)) => a == b,
+            (Object::Instance(a), Object::Instance(b)) => Rc::ptr_eq(a, b),
+            (Object::Variable(a), Object::Variable(b)) => a == b,
+            (Object::Nil, Object::Nil) => true,
+            _ => false,
+        }
+    }
 }
 
 impl std::fmt::Display for Object {
@@ -77,7 +95,7 @@ impl std::fmt::Display for Object {
             Object::Bool(b) => write!(f, "{}", b),
             Object::Callable(c) => write!(f, "{}", c),
             Object::Class(c) => write!(f, "{}", c),
-            Object::Instance(i) => write!(f, "{}", i),
+            Object::Instance(i) => write!(f, "{}", i.borrow()),
             Object::Variable(v) => write!(f, "{}", v),
             Object::Nil => write!(f, "nil"),
         }

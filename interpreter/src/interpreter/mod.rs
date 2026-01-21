@@ -34,12 +34,12 @@ use crate::{
 };
 
 struct ExprKey {
-    expr: Rc<dyn Expr>,
+    id: u64,
 }
 
 impl PartialEq for ExprKey {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.expr, &other.expr)
+        self.id == other.id
     }
 }
 
@@ -47,13 +47,13 @@ impl Eq for ExprKey {}
 
 impl Hash for ExprKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.expr).hash(state);
+        self.id.hash(state);
     }
 }
 
 impl ExprKey {
     fn new(expr: Rc<dyn Expr>) -> Self {
-        Self { expr }
+        Self { id: expr.id() }
     }
 }
 
@@ -180,7 +180,17 @@ impl expr::Visitor for Interpreter {
             }
             TokenType::Slash => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
-                    Ok(Object::Num(l / r))
+                    if r == 0.0 {
+                        Err(Error::Runtime(
+                            RuntimeError::new(
+                                String::from("Division by zero"),
+                                expr.operator().to_owned(),
+                            )
+                            .into(),
+                        ))
+                    } else {
+                        Ok(Object::Num(l / r))
+                    }
                 } else {
                     Err(Error::Runtime(
                         RuntimeError::new(
@@ -284,36 +294,72 @@ impl expr::Visitor for Interpreter {
             .map(|arg| self.evaluate(arg.as_ref()))
             .collect::<Result<Vec<Object>, Error>>()?;
 
-        if let Object::Callable(callee) = callee {
-            if arguments.len() != callee.arity() {
-                return Err(Error::Runtime(
-                    RuntimeError::new(
-                        format!(
-                            "Expected {} arguments but got {}.",
-                            callee.arity(),
-                            arguments.len()
-                        ),
-                        expr.paren().to_owned(),
-                    )
-                    .into(),
-                ));
+        match callee {
+            Object::Callable(callee) => {
+                if arguments.len() != callee.arity() {
+                    return Err(Error::Runtime(
+                        RuntimeError::new(
+                            format!(
+                                "Expected {} arguments but got {}.",
+                                callee.arity(),
+                                arguments.len()
+                            ),
+                            expr.paren().to_owned(),
+                        )
+                        .into(),
+                    ));
+                }
+                Ok(callee.call(self, arguments))
             }
-            Ok(callee.call(self, arguments))
-        } else {
-            Err(Error::Runtime(
+            Object::Class(ref class) => {
+                if arguments.len() != class.arity() {
+                    return Err(Error::Runtime(
+                        RuntimeError::new(
+                            format!(
+                                "Expected {} arguments but got {}.",
+                                class.arity(),
+                                arguments.len()
+                            ),
+                            expr.paren().to_owned(),
+                        )
+                        .into(),
+                    ));
+                }
+                Ok(class.call(self, arguments))
+            }
+            _ => Err(Error::Runtime(
                 RuntimeError::new(
                     String::from("Can only call functions and classes"),
                     expr.paren().to_owned(),
                 )
                 .into(),
-            ))
+            )),
         }
     }
 
     fn visit_get_expr(&mut self, expr: &Get) -> Result<Object, Error> {
         let object = self.evaluate(expr.object().as_ref())?;
         if let Object::Instance(instance) = object {
-            instance.get(expr.name())
+            let result = instance.borrow().get(expr.name())?;
+            match result {
+                Some(value) => Ok(value),
+                None => {
+                    // It's a method, need to bind it
+                    if let Some(method) = instance.borrow().get_method(expr.name().lexeme()) {
+                        Ok(Object::Callable(Box::new(Fun::Function(
+                            method.bind(Rc::clone(&instance)),
+                        ))))
+                    } else {
+                        Err(Error::Runtime(
+                            RuntimeError::new(
+                                format!("Undefined property '{}'.", expr.name().lexeme()),
+                                expr.name().to_owned(),
+                            )
+                            .into(),
+                        ))
+                    }
+                }
+            }
         } else {
             Err(Error::Runtime(
                 RuntimeError::new(
@@ -350,9 +396,9 @@ impl expr::Visitor for Interpreter {
     fn visit_set_expr(&mut self, expr: &Set) -> Result<Object, Error> {
         let object = self.evaluate(expr.object().as_ref())?;
 
-        if let Object::Instance(mut instance) = object {
+        if let Object::Instance(instance) = object {
             let value = self.evaluate(expr.value().as_ref())?;
-            instance.set(expr.name(), value.to_owned());
+            instance.borrow_mut().set(expr.name(), value.to_owned());
             Ok(value)
         } else {
             Err(Error::Runtime(
@@ -392,7 +438,7 @@ impl expr::Visitor for Interpreter {
 
         if let Some(method) = method {
             Ok(Object::Callable(Box::new(Fun::Function(
-                method.bind(&instance.unwrap()),
+                method.bind(instance.unwrap()),
             ))))
         } else {
             return Err(Error::Runtime(
@@ -465,13 +511,13 @@ impl stmt::Visitor for Interpreter {
             .borrow_mut()
             .define(lexeme.to_owned(), Object::Nil);
 
-        if let Some(superclass) = stmt.superclass() {
+        if let Some(ref sc) = superclass {
             self.environment = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(
                 &self.environment,
             )))));
             self.environment.borrow_mut().define(
                 String::from("super"),
-                Object::Variable(Box::new(superclass.clone())),
+                Object::Class(sc.as_ref().clone()),
             )
         }
 

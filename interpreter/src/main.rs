@@ -43,6 +43,8 @@ fn run_file(file_path: &String) {
 }
 
 fn run_prompt() {
+    let mut interpreter = Interpreter::new();
+
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
@@ -53,8 +55,6 @@ fn run_prompt() {
         if line.trim().is_empty() {
             break;
         }
-
-        let mut interpreter = Interpreter::new();
 
         run(line, &mut interpreter);
 

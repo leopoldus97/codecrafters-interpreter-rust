@@ -58,23 +58,17 @@ impl Environment {
     }
 
     pub fn get_at(&self, distance: usize, name: String) -> Result<Object, Error> {
-        Ok(self
-            .ancestor(distance)?
-            .borrow_mut()
-            .values
-            .get(&name)
-            .unwrap()
-            .to_owned())
-    }
-
-    pub fn ancestor(&self, distance: usize) -> Result<Rc<RefCell<Environment>>, Error> {
-        let mut environment = Rc::clone(self.enclosing.as_ref().unwrap());
-
-        if distance != 0 {
-            environment = self.ancestor(distance - 1)?;
+        if distance == 0 {
+            match self.values.get(&name) {
+                Some(v) => Ok(v.to_owned()),
+                None => panic!("get_at distance=0: '{}' not found in values: {:?}", name, self.values.keys().collect::<Vec<_>>()),
+            }
+        } else {
+            match self.enclosing.as_ref() {
+                Some(enc) => enc.borrow().get_at(distance - 1, name),
+                None => panic!("get_at distance={}: no enclosing env for '{}'", distance, name),
+            }
         }
-
-        Ok(environment)
     }
 
     pub fn assign(&mut self, name: &Token, value: Object) -> Result<(), Error> {
@@ -104,10 +98,15 @@ impl Environment {
     }
 
     pub fn assign_at(&mut self, distance: usize, name: &Token, value: Object) -> Result<(), Error> {
-        self.ancestor(distance)?
-            .borrow_mut()
-            .values
-            .insert(name.lexeme().to_string(), value);
+        if distance == 0 {
+            self.values.insert(name.lexeme().to_string(), value);
+        } else {
+            self.enclosing
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .assign_at(distance - 1, name, value)?;
+        }
         Ok(())
     }
 }

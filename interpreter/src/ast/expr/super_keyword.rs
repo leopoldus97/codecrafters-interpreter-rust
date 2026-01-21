@@ -1,4 +1,4 @@
-use crate::scanner::token::Token;
+use crate::{scanner::token::Token, utils::next_id};
 
 use super::Expr;
 
@@ -6,11 +6,16 @@ use super::Expr;
 pub struct Super {
     keyword: Token,
     method: Token,
+    id: u64,
 }
 
 impl Super {
     pub fn new(keyword: Token, method: Token) -> Self {
-        Self { keyword, method }
+        Self {
+            keyword,
+            method,
+            id: next_id(),
+        }
     }
 
     pub fn keyword(&self) -> &Token {
@@ -23,6 +28,10 @@ impl Super {
 }
 
 impl Expr for Super {
+    fn id(&self) -> u64 {
+        self.id
+    }
+
     fn accept(
         &self,
         visitor: &mut dyn super::Visitor,

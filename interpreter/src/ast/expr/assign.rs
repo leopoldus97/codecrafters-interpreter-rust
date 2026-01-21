@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::{
     scanner::token::{Object, Token},
-    utils::error::Error,
+    utils::{error::Error, next_id},
 };
 
 use super::Expr;
@@ -11,11 +11,16 @@ use super::Expr;
 pub struct Assign {
     name: Token,
     value: Rc<dyn Expr>,
+    id: u64,
 }
 
 impl Assign {
     pub fn new(name: Token, value: Rc<dyn Expr>) -> Self {
-        Self { name, value }
+        Self {
+            name,
+            value,
+            id: next_id(),
+        }
     }
 
     pub fn name(&self) -> &Token {
@@ -28,6 +33,10 @@ impl Assign {
 }
 
 impl Expr for Assign {
+    fn id(&self) -> u64 {
+        self.id
+    }
+
     fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
         visitor.visit_assign_expr(self)
     }
