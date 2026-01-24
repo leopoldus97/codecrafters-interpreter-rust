@@ -3,7 +3,8 @@ use crate::{
         expr::variable::Variable,
         stmt::{function::Function, Stmt},
     },
-    scanner::token::Token,
+    scanner::token::{Object, Token},
+    utils::error::Error,
 };
 
 pub struct Class {
@@ -35,10 +36,7 @@ impl Class {
 }
 
 impl Stmt for Class {
-    fn accept(
-        &self,
-        visitor: &mut dyn super::Visitor,
-    ) -> Result<crate::scanner::token::Object, crate::utils::error::Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_class_stmt(self)
     }
 

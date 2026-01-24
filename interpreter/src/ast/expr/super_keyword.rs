@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::{
     scanner::token::{Object, Token},
     utils::{error::Error, next_id},
@@ -8,37 +6,37 @@ use crate::{
 use super::Expr;
 
 #[derive(Clone)]
-pub struct Assign {
-    name: Token,
-    value: Rc<dyn Expr>,
+pub struct Super {
+    keyword: Token,
+    method: Token,
     id: u64,
 }
 
-impl Assign {
-    pub fn new(name: Token, value: Rc<dyn Expr>) -> Self {
+impl Super {
+    pub fn new(keyword: Token, method: Token) -> Self {
         Self {
-            name,
-            value,
+            keyword,
+            method,
             id: next_id(),
         }
     }
 
-    pub fn name(&self) -> &Token {
-        &self.name
+    pub fn keyword(&self) -> &Token {
+        &self.keyword
     }
 
-    pub fn value(&self) -> &dyn Expr {
-        self.value.as_ref()
+    pub fn method(&self) -> &Token {
+        &self.method
     }
 }
 
-impl Expr for Assign {
+impl Expr for Super {
     fn id(&self) -> u64 {
         self.id
     }
 
     fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
-        visitor.visit_assign_expr(self)
+        visitor.visit_super_expr(self)
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

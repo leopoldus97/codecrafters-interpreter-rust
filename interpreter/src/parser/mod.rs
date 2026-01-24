@@ -6,8 +6,8 @@ use crate::{
     ast::{
         expr::{
             assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
-            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
-            variable::Variable, Expr,
+            literal::Literal, logical::Logical, set::Set, super_keyword::Super, this::This,
+            unary::Unary, variable::Variable, Expr,
         },
         stmt::{
             block::Block, class::Class, expression::Expression, function::Function, print::Print,
@@ -32,7 +32,7 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Rc<dyn Stmt>>, Error> {
+    pub fn parse(&mut self) -> Result<Vec<Rc<dyn Stmt>>, Box<Error>> {
         let mut statements: Vec<Rc<dyn Stmt>> = Vec::new();
         while !self.is_at_end() {
             let declaration = self.declaration();
@@ -141,6 +141,14 @@ impl Parser {
 
     fn class_declaration(&mut self) -> Result<Rc<dyn Stmt>, ParseError> {
         let name = self.consume(TokenType::Identifier, "Expect class name.")?;
+
+        let superclass = if self.match_token_types(&[TokenType::Less]) {
+            self.consume(TokenType::Identifier, "Expect superclass name.")?;
+            Some(Variable::new(self.previous()))
+        } else {
+            None
+        };
+
         self.consume(TokenType::LeftBrace, "Expect '{' before class body.")?;
 
         let mut methods = vec![];
@@ -153,7 +161,7 @@ impl Parser {
 
         self.consume(TokenType::RightBrace, "Expect '}' after class body.")?;
 
-        Ok(Rc::new(Class::new(name, methods, None)))
+        Ok(Rc::new(Class::new(name, methods, superclass)))
     }
 
     fn statement(&mut self) -> Result<Rc<dyn Stmt>, ParseError> {
@@ -168,7 +176,7 @@ impl Parser {
         } else if self.match_token_types(&[TokenType::While]) {
             self.while_statement()
         } else if self.match_token_types(&[TokenType::LeftBrace]) {
-            Ok(Rc::new(Block::new(self.block())))
+            Ok(Rc::new(Block::new(self.block()?)))
         } else {
             self.expression_statement()
         }
@@ -202,7 +210,7 @@ impl Parser {
             TokenType::LeftBrace,
             &format!("Expect '{{' before {} body.", kind),
         )?;
-        let body = self.block();
+        let body = self.block()?;
         Ok(Rc::new(Function::new(name, parameters, body)))
     }
 
@@ -306,7 +314,7 @@ impl Parser {
         Ok(Rc::new(Expression::new(expr)))
     }
 
-    fn block(&mut self) -> Vec<Rc<dyn Stmt>> {
+    fn block(&mut self) -> Result<Vec<Rc<dyn Stmt>>, ParseError> {
         let mut statements: Vec<Rc<dyn Stmt>> = Vec::new();
 
         while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
@@ -316,9 +324,8 @@ impl Parser {
             }
         }
 
-        self.consume(TokenType::RightBrace, "Expect '}' after block.")
-            .unwrap();
-        statements
+        self.consume(TokenType::RightBrace, "Expect '}' after block.")?;
+        Ok(statements)
     }
 
     fn expression(&mut self) -> Result<Rc<dyn Expr>, ParseError> {
@@ -489,6 +496,11 @@ impl Parser {
             Ok(Rc::new(Literal::new(Object::Nil)))
         } else if self.match_token_types(&[TokenType::Number, TokenType::String]) {
             Ok(Rc::new(Literal::new(self.previous().literal().clone())))
+        } else if self.match_token_types(&[TokenType::Super]) {
+            let keyword = self.previous();
+            self.consume(TokenType::Dot, "Expect '.' after 'super'.")?;
+            let method = self.consume(TokenType::Identifier, "Expect superclass method name.")?;
+            Ok(Rc::new(Super::new(keyword, method)))
         } else if self.match_token_types(&[TokenType::This]) {
             Ok(Rc::new(This::new(self.previous())))
         } else if self.match_token_types(&[TokenType::Identifier]) {

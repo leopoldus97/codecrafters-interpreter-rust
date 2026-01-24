@@ -18,8 +18,8 @@ use crate::{
     ast::{
         expr::{
             self, assign::Assign, binary::Binary, call::Call, get::Get, grouping::Grouping,
-            literal::Literal, logical::Logical, set::Set, this::This, unary::Unary,
-            variable::Variable, Expr,
+            literal::Literal, logical::Logical, set::Set, super_keyword::Super, this::This,
+            unary::Unary, variable::Variable, Expr,
         },
         stmt::{
             self, block::Block, class::Class, expression::Expression, function::Function,
@@ -34,12 +34,12 @@ use crate::{
 };
 
 struct ExprKey {
-    expr: Rc<dyn Expr>,
+    id: u64,
 }
 
 impl PartialEq for ExprKey {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.expr, &other.expr)
+        self.id == other.id
     }
 }
 
@@ -47,13 +47,13 @@ impl Eq for ExprKey {}
 
 impl Hash for ExprKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.expr).hash(state);
+        self.id.hash(state);
     }
 }
 
 impl ExprKey {
     fn new(expr: Rc<dyn Expr>) -> Self {
-        Self { expr }
+        Self { id: expr.id() }
     }
 }
 
@@ -84,7 +84,7 @@ impl Interpreter {
     pub fn interpret(&mut self, statements: Vec<Rc<dyn Stmt>>) {
         for statement in statements {
             if let Err(e) = self.execute(statement.as_ref()) {
-                match e {
+                match *e {
                     Error::Runtime(e) => {
                         if let crate::utils::error::Runtime::RuntimeError(error) = e {
                             runtime_error(error);
@@ -100,7 +100,7 @@ impl Interpreter {
         &mut self,
         statements: &Vec<Rc<dyn Stmt>>,
         environment: Rc<RefCell<Environment>>,
-    ) -> Result<Object, Error> {
+    ) -> Result<Object, Box<Error>> {
         let previous = Rc::clone(&self.environment);
         self.environment = environment;
         for statement in statements {
@@ -113,21 +113,21 @@ impl Interpreter {
         Ok(Object::Nil)
     }
 
-    fn evaluate(&mut self, expr: &dyn Expr) -> Result<Object, Error> {
+    fn evaluate(&mut self, expr: &dyn Expr) -> Result<Object, Box<Error>> {
         expr.accept(self)
     }
 
-    fn execute(&mut self, stmt: &dyn Stmt) -> Result<Object, Error> {
+    fn execute(&mut self, stmt: &dyn Stmt) -> Result<Object, Box<Error>> {
         stmt.accept(self)
     }
 
-    pub fn resolve(&mut self, expr: Rc<dyn Expr>, depth: u8) -> Result<Object, Error> {
+    pub fn resolve(&mut self, expr: Rc<dyn Expr>, depth: u8) -> Object {
         let key = ExprKey::new(expr);
         self.locals.insert(key, depth);
-        Ok(Object::Nil)
+        Object::Nil
     }
 
-    fn look_up_variable(&self, name: &Token, expr: Rc<dyn Expr>) -> Result<Object, Error> {
+    fn look_up_variable(&self, name: &Token, expr: Rc<dyn Expr>) -> Result<Object, Box<Error>> {
         let key = ExprKey::new(expr);
         if let Some(distance) = self.locals.get(&key) {
             self.environment
@@ -140,7 +140,7 @@ impl Interpreter {
 }
 
 impl expr::Visitor for Interpreter {
-    fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Error> {
+    fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Box<Error>> {
         let value = self.evaluate(expr.value())?;
         let key = ExprKey::new(Rc::new(expr.clone()));
 
@@ -160,7 +160,7 @@ impl expr::Visitor for Interpreter {
         Ok(value)
     }
 
-    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<Object, Error> {
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<Object, Box<Error>> {
         let left = self.evaluate(expr.left())?;
         let right = self.evaluate(expr.right())?;
 
@@ -169,39 +169,49 @@ impl expr::Visitor for Interpreter {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Num(l - r))
                 } else {
-                    Err(Error::Runtime(
+                    Err(Box::new(Error::Runtime(
                         RuntimeError::new(
                             String::from("Both operands must be numbers"),
                             expr.operator().to_owned(),
                         )
                         .into(),
-                    ))
+                    )))
                 }
             }
             TokenType::Slash => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
-                    Ok(Object::Num(l / r))
+                    if r == 0.0 {
+                        Err(Box::new(Error::Runtime(
+                            RuntimeError::new(
+                                String::from("Division by zero"),
+                                expr.operator().to_owned(),
+                            )
+                            .into(),
+                        )))
+                    } else {
+                        Ok(Object::Num(l / r))
+                    }
                 } else {
-                    Err(Error::Runtime(
+                    Err(Box::new(Error::Runtime(
                         RuntimeError::new(
                             String::from("Both operands must be numbers"),
                             expr.operator().to_owned(),
                         )
                         .into(),
-                    ))
+                    )))
                 }
             }
             TokenType::Star => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Num(l * r))
                 } else {
-                    Err(Error::Runtime(
+                    Err(Box::new(Error::Runtime(
                         RuntimeError::new(
                             String::from("Both operands must be numbers"),
                             expr.operator().to_owned(),
                         )
                         .into(),
-                    ))
+                    )))
                 }
             }
             TokenType::Plus => match (left, right) {
@@ -209,64 +219,64 @@ impl expr::Visitor for Interpreter {
                 (Object::Str(l), Object::Str(r)) => Ok(Object::Str(format!("{}{}", l, r))),
                 (Object::Str(l), Object::Num(r)) => Ok(Object::Str(format!("{}{}", l, r))),
                 (Object::Num(l), Object::Str(r)) => Ok(Object::Str(format!("{}{}", l, r))),
-                _ => Err(Error::Runtime(
+                _ => Err(Box::new(Error::Runtime(
                     RuntimeError::new(
                         String::from("Both operands must be numbers or strings"),
                         expr.operator().to_owned(),
                     )
                     .into(),
-                )),
+                ))),
             },
             TokenType::Greater => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Bool(l > r))
                 } else {
-                    Err(Error::Runtime(
+                    Err(Box::new(Error::Runtime(
                         RuntimeError::new(
                             String::from("Both operands must be numbers"),
                             expr.operator().to_owned(),
                         )
                         .into(),
-                    ))
+                    )))
                 }
             }
             TokenType::GreaterEqual => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Bool(l >= r))
                 } else {
-                    Err(Error::Runtime(
+                    Err(Box::new(Error::Runtime(
                         RuntimeError::new(
                             String::from("Both operands must be numbers"),
                             expr.operator().to_owned(),
                         )
                         .into(),
-                    ))
+                    )))
                 }
             }
             TokenType::Less => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Bool(l < r))
                 } else {
-                    Err(Error::Runtime(
+                    Err(Box::new(Error::Runtime(
                         RuntimeError::new(
                             String::from("Both operands must be numbers"),
                             expr.operator().to_owned(),
                         )
                         .into(),
-                    ))
+                    )))
                 }
             }
             TokenType::LessEqual => {
                 if let (Object::Num(l), Object::Num(r)) = (left, right) {
                     Ok(Object::Bool(l <= r))
                 } else {
-                    Err(Error::Runtime(
+                    Err(Box::new(Error::Runtime(
                         RuntimeError::new(
                             String::from("Both operands must be numbers"),
                             expr.operator().to_owned(),
                         )
                         .into(),
-                    ))
+                    )))
                 }
             }
             TokenType::BangEqual => Ok(Object::Bool(!is_equal(left, right))),
@@ -275,65 +285,101 @@ impl expr::Visitor for Interpreter {
         }
     }
 
-    fn visit_call_expr(&mut self, expr: &Call) -> Result<Object, Error> {
+    fn visit_call_expr(&mut self, expr: &Call) -> Result<Object, Box<Error>> {
         let callee = self.evaluate(expr.callee())?;
 
         let arguments = expr
             .arguments()
             .iter()
             .map(|arg| self.evaluate(arg.as_ref()))
-            .collect::<Result<Vec<Object>, Error>>()?;
+            .collect::<Result<Vec<Object>, Box<Error>>>()?;
 
-        if let Object::Callable(callee) = callee {
-            if arguments.len() != callee.arity() {
-                return Err(Error::Runtime(
-                    RuntimeError::new(
-                        format!(
-                            "Expected {} arguments but got {}.",
-                            callee.arity(),
-                            arguments.len()
-                        ),
-                        expr.paren().to_owned(),
-                    )
-                    .into(),
-                ));
+        match callee {
+            Object::Callable(callee) => {
+                if arguments.len() != callee.arity() {
+                    return Err(Box::new(Error::Runtime(
+                        RuntimeError::new(
+                            format!(
+                                "Expected {} arguments but got {}.",
+                                callee.arity(),
+                                arguments.len()
+                            ),
+                            expr.paren().to_owned(),
+                        )
+                        .into(),
+                    )));
+                }
+                Ok(callee.call(self, arguments))
             }
-            Ok(callee.call(self, arguments))
-        } else {
-            Err(Error::Runtime(
+            Object::Class(ref class) => {
+                if arguments.len() != class.arity() {
+                    return Err(Box::new(Error::Runtime(
+                        RuntimeError::new(
+                            format!(
+                                "Expected {} arguments but got {}.",
+                                class.arity(),
+                                arguments.len()
+                            ),
+                            expr.paren().to_owned(),
+                        )
+                        .into(),
+                    )));
+                }
+                Ok(class.call(self, arguments))
+            }
+            _ => Err(Box::new(Error::Runtime(
                 RuntimeError::new(
                     String::from("Can only call functions and classes"),
                     expr.paren().to_owned(),
                 )
                 .into(),
-            ))
+            ))),
         }
     }
 
-    fn visit_get_expr(&mut self, expr: &Get) -> Result<Object, Error> {
+    fn visit_get_expr(&mut self, expr: &Get) -> Result<Object, Box<Error>> {
         let object = self.evaluate(expr.object().as_ref())?;
         if let Object::Instance(instance) = object {
-            instance.get(expr.name())
+            let result = instance.borrow().get(expr.name())?;
+            match result {
+                Some(value) => Ok(value),
+                None => {
+                    // It's a method, need to bind it
+                    if let Some(method) = instance.borrow().get_method(expr.name().lexeme()) {
+                        Ok(Object::Callable(Box::new(Fun::Function(
+                            method.bind(Rc::clone(&instance)),
+                        ))))
+                    } else {
+                        Err(Box::new(Error::Runtime(
+                            RuntimeError::new(
+                                format!("Undefined property '{}'.", expr.name().lexeme()),
+                                expr.name().to_owned(),
+                            )
+                            .into(),
+                        )))
+                    }
+                }
+            }
         } else {
-            Err(Error::Runtime(
+            Err(Box::new(Error::Runtime(
                 RuntimeError::new(
                     String::from("Only instances have properties"),
                     expr.name().to_owned(),
                 )
                 .into(),
-            ))
+            )))
         }
     }
 
-    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Box<Error>> {
         self.evaluate(expr.expression())
     }
 
-    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<Object, Error> {
+    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<Object, Box<Error>> {
         Ok(expr.value().to_owned())
     }
 
-    fn visit_logical_expr(&mut self, expr: &Logical) -> Result<Object, Error> {
+    fn visit_logical_expr(&mut self, expr: &Logical) -> Result<Object, Box<Error>> {
         let left = self.evaluate(expr.left())?;
 
         if expr.operator().token_type() == &TokenType::Or {
@@ -347,29 +393,69 @@ impl expr::Visitor for Interpreter {
         self.evaluate(expr.right())
     }
 
-    fn visit_set_expr(&mut self, expr: &Set) -> Result<Object, Error> {
+    fn visit_set_expr(&mut self, expr: &Set) -> Result<Object, Box<Error>> {
         let object = self.evaluate(expr.object().as_ref())?;
 
-        if let Object::Instance(mut instance) = object {
+        if let Object::Instance(instance) = object {
             let value = self.evaluate(expr.value().as_ref())?;
-            instance.set(expr.name(), value.to_owned());
+            instance.borrow_mut().set(expr.name(), value.to_owned());
             Ok(value)
         } else {
-            Err(Error::Runtime(
+            Err(Box::new(Error::Runtime(
                 RuntimeError::new(
                     String::from("Only instances have fields"),
                     expr.name().to_owned(),
                 )
                 .into(),
-            ))
+            )))
         }
     }
 
-    fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Error> {
+    fn visit_super_expr(&mut self, expr: &Super) -> Result<Object, Box<Error>> {
+        let key = ExprKey::new(Rc::new(expr.clone()));
+        let distance = self.locals.get(&key).unwrap();
+        let superclass = self
+            .environment
+            .borrow()
+            .get_at(*distance as usize, String::from("super"))?;
+
+        let object = self
+            .environment
+            .borrow()
+            .get_at((*distance as usize).saturating_sub(1), String::from("this"))?;
+
+        let instance = match object {
+            Object::Instance(instance) => Some(instance),
+            _ => None,
+        };
+
+        let lexeme = expr.method().lexeme();
+
+        let method = match superclass {
+            Object::Class(class) => class.find_method(lexeme).cloned(),
+            _ => None,
+        };
+
+        if let Some(method) = method {
+            Ok(Object::Callable(Box::new(Fun::Function(
+                method.bind(instance.unwrap()),
+            ))))
+        } else {
+            Err(Box::new(Error::Runtime(
+                RuntimeError::new(
+                    format!("Undefined property '{}'.", lexeme),
+                    expr.method().to_owned(),
+                )
+                .into(),
+            )))
+        }
+    }
+
+    fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Box<Error>> {
         self.look_up_variable(expr.keyword(), Rc::new(expr.clone()))
     }
 
-    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Error> {
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Box<Error>> {
         let right = self.evaluate(expr.right())?;
 
         let result = match expr.operator().token_type() {
@@ -377,13 +463,13 @@ impl expr::Visitor for Interpreter {
                 if let Object::Num(n) = right {
                     Ok(Object::Num(n.neg()))
                 } else {
-                    Err(Error::Runtime(
+                    Err(Box::new(Error::Runtime(
                         RuntimeError::new(
                             String::from("Unary minus must be applied to a number"),
                             expr.operator().to_owned(),
                         )
                         .into(),
-                    ))
+                    )))
                 }
             }
             TokenType::Bang => Ok(Object::Bool(!right.is_truthy())),
@@ -393,23 +479,47 @@ impl expr::Visitor for Interpreter {
         result
     }
 
-    fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
+    fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Box<Error>> {
         self.look_up_variable(expr.name(), Rc::new(expr.clone()))
     }
 }
 
 impl stmt::Visitor for Interpreter {
-    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<Object, Error> {
+    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<Object, Box<Error>> {
         let inner_environment = Environment::new(Some(Rc::clone(&self.environment)));
         let inner_environment = Rc::new(RefCell::new(inner_environment));
         self.execute_block(stmt.statements(), inner_environment)
     }
 
-    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Error> {
-        let name = stmt.name().lexeme();
+    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Box<Error>> {
+        let superclass = if let Some(superclass) = stmt.superclass() {
+            let name = superclass.name().to_owned();
+            let superclass = self.evaluate(superclass)?;
+            let sc = match superclass {
+                Object::Class(class) => Ok(class),
+                _ => Err(Box::new(Error::Runtime(
+                    RuntimeError::new(String::from("Superclass must be a class."), name).into(),
+                ))),
+            }?;
+            Some(Box::new(sc))
+        } else {
+            None
+        };
+
+        let lexeme = stmt.name().lexeme();
         self.environment
             .borrow_mut()
-            .define(name.to_owned(), Object::Nil);
+            .define(lexeme.to_owned(), Object::Nil);
+
+        if let Some(ref sc) = superclass {
+            self.environment = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(
+                &self.environment,
+            )))));
+            self.environment
+                .borrow_mut()
+                .define(String::from("super"), Object::Class(sc.as_ref().clone()))
+        }
+
         let mut methods: HashMap<String, callable::Function> = HashMap::new();
         for method in stmt.methods() {
             let is_initializer = method.name().lexeme() == "init";
@@ -420,18 +530,24 @@ impl stmt::Visitor for Interpreter {
             );
             methods.insert(method.name().lexeme().to_owned(), function);
         }
-        let klass = callable::Class::new(name.to_owned(), methods);
+        let klass = callable::Class::new(lexeme.to_owned(), methods, superclass);
         let klass = Object::Class(klass);
+
+        if stmt.superclass().is_some() {
+            let enclosing = self.environment.borrow().enclosing.clone().unwrap();
+            self.environment = enclosing;
+        }
+
         self.environment.borrow_mut().assign(stmt.name(), klass)?;
         Ok(Object::Nil)
     }
 
-    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Error> {
+    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Box<Error>> {
         self.evaluate(stmt.expression())?;
         Ok(Object::Nil)
     }
 
-    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<Object, Error> {
+    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<Object, Box<Error>> {
         let function = callable::Function::new(stmt.clone(), Rc::clone(&self.environment), false);
         let callable = Object::Callable(Box::new(Fun::Function(function)));
         self.environment
@@ -440,7 +556,7 @@ impl stmt::Visitor for Interpreter {
         Ok(Object::Nil)
     }
 
-    fn visit_if_stmt(&mut self, stmt: &If) -> Result<Object, Error> {
+    fn visit_if_stmt(&mut self, stmt: &If) -> Result<Object, Box<Error>> {
         let condition = self.evaluate(stmt.condition())?;
         if condition.is_truthy() {
             self.execute(stmt.then_branch())?;
@@ -451,23 +567,23 @@ impl stmt::Visitor for Interpreter {
         Ok(Object::Nil)
     }
 
-    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<Object, Error> {
+    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<Object, Box<Error>> {
         let value = self.evaluate(stmt.expression())?;
         println!("{}", value);
         Ok(Object::Nil)
     }
 
-    fn visit_return_stmt(&mut self, stmt: &stmt::r#return::Return) -> Result<Object, Error> {
+    fn visit_return_stmt(&mut self, stmt: &stmt::r#return::Return) -> Result<Object, Box<Error>> {
         let value = if let Some(value) = stmt.value() {
             self.evaluate(value.as_ref())?
         } else {
             Object::Nil
         };
 
-        Err(Error::Runtime(Return::new(value).into()))
+        Err(Box::new(Error::Runtime(Return::new(value).into())))
     }
 
-    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<Object, Error> {
+    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<Object, Box<Error>> {
         let value = if let Some(initializer) = stmt.initializer() {
             self.evaluate(initializer.as_ref())?
         } else {
@@ -480,7 +596,7 @@ impl stmt::Visitor for Interpreter {
         Ok(Object::Nil)
     }
 
-    fn visit_while_stmt(&mut self, stmt: &While) -> Result<Object, Error> {
+    fn visit_while_stmt(&mut self, stmt: &While) -> Result<Object, Box<Error>> {
         while self.evaluate(stmt.condition())?.is_truthy() {
             self.execute(stmt.body())?;
         }

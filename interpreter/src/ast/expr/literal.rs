@@ -17,7 +17,7 @@ impl Literal {
 }
 
 impl Expr for Literal {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_literal_expr(self)
     }
 

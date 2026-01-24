@@ -36,7 +36,7 @@ impl Logical {
 }
 
 impl Expr for Logical {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_logical_expr(self)
     }
 
