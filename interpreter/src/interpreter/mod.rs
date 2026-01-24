@@ -422,7 +422,7 @@ impl expr::Visitor for Interpreter {
         let object = self
             .environment
             .borrow()
-            .get_at(*distance as usize - 1, String::from("this"))?;
+            .get_at((*distance as usize).saturating_sub(1), String::from("this"))?;
 
         let instance = match object {
             Object::Instance(instance) => Some(instance),
@@ -497,9 +497,9 @@ impl stmt::Visitor for Interpreter {
             let superclass = self.evaluate(superclass)?;
             let sc = match superclass {
                 Object::Class(class) => Ok(class),
-                _ => Err(Error::Runtime(
+                _ => Err(Box::new(Error::Runtime(
                     RuntimeError::new(String::from("Superclass must be a class."), name).into(),
-                )),
+                ))),
             }?;
             Some(Box::new(sc))
         } else {

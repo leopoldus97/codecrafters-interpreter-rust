@@ -183,7 +183,6 @@ impl<'a> expr::Visitor for Resolver<'a> {
     fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Box<Error>> {
         if self.current_class == ClassType::None {
             eprintln!("Cannot use 'this' outside of a class.");
-            return Ok(Object::Nil);
         }
 
         self.resolve_local(Rc::new(expr.clone()), expr.keyword());
