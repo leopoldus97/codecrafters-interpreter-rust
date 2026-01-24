@@ -1,14 +1,11 @@
-use crate::{
-    chunk::{Chunk, OpCode},
-    value::ValuePrint,
-};
+use crate::chunk::{Chunk, OpCode};
 
 impl Chunk {
-    pub fn disassemble(&self, name: &'static str) {
-        print!("== {name} ==\n");
+    pub fn disassemble(&self, name: &str) {
+        println!("== {name} ==");
 
         let mut offset = 0;
-        while offset < self.count {
+        while offset < self.len() {
             offset = self.disassemble_instruction(offset);
         }
     }
@@ -16,47 +13,33 @@ impl Chunk {
     pub fn disassemble_instruction(&self, offset: usize) -> usize {
         print!("{offset:04} ");
 
-        if offset > 0 && unsafe { *self.lines.offset(offset as isize) }
-            == unsafe { *self.lines.offset((offset - 1) as isize) }
-        {
+        if offset > 0 && self.line(offset) == self.line(offset - 1) {
             print!("   | ");
         } else {
-            print!("{:4} ", unsafe { *self.lines.offset(offset as isize) });
+            print!("{:4} ", self.line(offset));
         }
 
-        let instruction = unsafe {
-            let inst = self.code.offset(offset as isize);
-            *inst
-        };
+        let instruction = self.code()[offset];
 
-        match instruction {
-            x if x == OpCode::OpReturn as u8 => simple_instruction("OP_RETURN", offset),
-            x if x == OpCode::OpConstant as u8 => constant_instruction("OP_CONSTANT", self, offset),
-            _ => {
-                print!("Unknown opcode {instruction:?}\n");
+        match OpCode::try_from(instruction) {
+            Ok(OpCode::OpReturn) => simple_instruction("OP_RETURN", offset),
+            Ok(OpCode::OpConstant) => self.constant_instruction("OP_CONSTANT", offset),
+            Err(byte) => {
+                println!("Unknown opcode {byte}");
                 offset + 1
             }
         }
     }
-}
 
-fn simple_instruction(name: &'static str, offset: usize) -> usize {
-    print!("{name}\n");
-    offset + 1
-}
-
-fn constant_instruction(name: &'static str, chunk: &Chunk, offset: usize) -> usize {
-    let constant = unsafe {
-        let inst = chunk.code.offset((offset + 1) as isize);
-        *inst
-    };
-
-    print!("{name} {constant:4} '");
-    unsafe {
-        let val = chunk.constants.values.offset(constant as isize);
-        (*val).print();
+    fn constant_instruction(&self, name: &str, offset: usize) -> usize {
+        let constant_idx = self.code()[offset + 1];
+        let value = self.read_constant(constant_idx);
+        println!("{name} {constant_idx:4} '{value}'");
+        offset + 2
     }
-    print!("'\n");
+}
 
-    offset + 2
+fn simple_instruction(name: &str, offset: usize) -> usize {
+    println!("{name}");
+    offset + 1
 }

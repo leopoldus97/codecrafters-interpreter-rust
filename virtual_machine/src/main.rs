@@ -10,5 +10,4 @@ fn main() {
     chunk.write(OpCode::OpReturn as u8, 123);
 
     chunk.disassemble("test chunk");
-    chunk.free();
 }

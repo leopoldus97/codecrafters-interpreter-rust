@@ -1,57 +1,63 @@
-use crate::{free_array, grow_array, grow_capacity, value::{Value, ValueArray}};
+use crate::value::{Value, ValueArray};
 
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpCode {
     OpReturn,
     OpConstant,
 }
 
-impl PartialEq for OpCode {
-    fn eq(&self, other: &Self) -> bool {
-        core::mem::discriminant(self) == core::mem::discriminant(other)
+impl TryFrom<u8> for OpCode {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(OpCode::OpReturn),
+            1 => Ok(OpCode::OpConstant),
+            _ => Err(value),
+        }
     }
 }
 
+#[derive(Default)]
 pub struct Chunk {
-    pub count: usize,
-    pub capacity: usize,
-    pub code: *mut u8,
-    pub lines: *mut usize,
-    pub constants: ValueArray,
+    code: Vec<u8>,
+    lines: Vec<usize>,
+    constants: ValueArray,
 }
 
 impl Chunk {
     pub fn new() -> Self {
-        Chunk {
-            count: 0,
-            capacity: 0,
-            code: std::ptr::null_mut(),
-            lines: std::ptr::null_mut(),
-            constants: ValueArray::new(),
-        }
+        Self::default()
     }
 
-    pub fn write(&mut self, value: u8, line: usize) {
-        if self.capacity < self.count + 1 {
-            let old_capacity = self.capacity;
-            self.capacity = grow_capacity!(old_capacity);
-            self.code = grow_array!(u8, self.code, old_capacity, self.capacity);
-            self.lines = grow_array!(usize, self.lines, old_capacity, self.capacity);
-        }
-
-        unsafe {
-            *self.code.add(self.count) = value;
-            *self.lines.add(self.count) = line;
-            self.count += 1;
-        }
-    }
-
-    pub fn free(&self) {
-        free_array!(u8, self.code, self.capacity);
-        Chunk::new();
+    pub fn write(&mut self, byte: u8, line: usize) {
+        self.code.push(byte);
+        self.lines.push(line);
     }
 
     pub fn add_constant(&mut self, value: Value) -> usize {
         self.constants.write(value);
-        self.constants.count - 1
+        self.constants.len() - 1
+    }
+
+    pub fn code(&self) -> &[u8] {
+        &self.code
+    }
+
+    pub fn line(&self, offset: usize) -> usize {
+        self.lines[offset]
+    }
+
+    pub fn read_constant(&self, index: u8) -> Value {
+        self.constants.get(index as usize)
+    }
+
+    pub fn len(&self) -> usize {
+        self.code.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.code.is_empty()
     }
 }

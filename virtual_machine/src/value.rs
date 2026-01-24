@@ -1,45 +1,44 @@
+
+use std::fmt;
+
 pub type Value = f64;
 
-pub trait ValuePrint {
-    fn print(&self);
-}
-
-impl ValuePrint for Value {
-    fn print(&self) {
-        print!("{self}");
+impl fmt::Display for ValueArray {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[")?;
+        for (i, v) in self.values.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{v}")?;
+        }
+        write!(f, "]")
     }
 }
 
+#[derive(Default)]
 pub struct ValueArray {
-    pub capacity: usize,
-    pub count: usize,
-    pub values: *mut Value,
+    values: Vec<Value>,
 }
 
 impl ValueArray {
     pub fn new() -> Self {
-        ValueArray {
-            capacity: 0,
-            count: 0,
-            values: std::ptr::null_mut(),
-        }
+        Self::default()
     }
 
     pub fn write(&mut self, value: Value) {
-        if self.capacity < self.count + 1 {
-            let old_capacity = self.capacity;
-            self.capacity = crate::grow_capacity!(old_capacity);
-            self.values = crate::grow_array!(Value, self.values, old_capacity, self.capacity);
-        }
-
-        unsafe {
-            *self.values.add(self.count) = value;
-            self.count += 1;
-        }
+        self.values.push(value);
     }
 
-    pub fn free(&self) {
-        crate::free_array!(Value, self.values, self.capacity);
-        ValueArray::new();
+    pub fn get(&self, index: usize) -> Value {
+        self.values[index]
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
     }
 }
