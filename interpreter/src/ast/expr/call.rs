@@ -36,7 +36,7 @@ impl Call {
 }
 
 impl Expr for Call {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_call_expr(self)
     }
 

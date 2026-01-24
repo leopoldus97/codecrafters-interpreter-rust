@@ -1,4 +1,7 @@
-use crate::{scanner::token::Token, utils::next_id};
+use crate::{
+    scanner::token::{Object, Token},
+    utils::{error::Error, next_id},
+};
 
 use super::Expr;
 
@@ -32,10 +35,7 @@ impl Expr for Super {
         self.id
     }
 
-    fn accept(
-        &self,
-        visitor: &mut dyn super::Visitor,
-    ) -> Result<crate::scanner::token::Object, crate::utils::error::Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_super_expr(self)
     }
 

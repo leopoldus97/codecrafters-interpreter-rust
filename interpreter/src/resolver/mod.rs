@@ -50,18 +50,18 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    pub fn resolve(&mut self, statements: &Vec<Rc<dyn Stmt>>) -> Result<Object, Error> {
+    pub fn resolve(&mut self, statements: &Vec<Rc<dyn Stmt>>) -> Result<Object, Box<Error>> {
         for stmt in statements {
             self.resolve_statement(stmt.as_ref())?;
         }
         Ok(Object::Nil)
     }
 
-    fn resolve_statement(&mut self, stmt: &dyn Stmt) -> Result<Object, Error> {
+    fn resolve_statement(&mut self, stmt: &dyn Stmt) -> Result<Object, Box<Error>> {
         stmt.accept(self)
     }
 
-    fn resolve_expression(&mut self, expr: &dyn Expr) -> Result<Object, Error> {
+    fn resolve_expression(&mut self, expr: &dyn Expr) -> Result<Object, Box<Error>> {
         expr.accept(self)
     }
 
@@ -123,19 +123,19 @@ impl<'a> Resolver<'a> {
 }
 
 impl<'a> expr::Visitor for Resolver<'a> {
-    fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Error> {
+    fn visit_assign_expr(&mut self, expr: &Assign) -> Result<Object, Box<Error>> {
         self.resolve_expression(expr.value())?;
         self.resolve_local(Rc::new(expr.clone()), expr.name());
         Ok(Object::Nil)
     }
 
-    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<Object, Error> {
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<Object, Box<Error>> {
         self.resolve_expression(expr.left())?;
         self.resolve_expression(expr.right())?;
         Ok(Object::Nil)
     }
 
-    fn visit_call_expr(&mut self, expr: &Call) -> Result<Object, Error> {
+    fn visit_call_expr(&mut self, expr: &Call) -> Result<Object, Box<Error>> {
         self.resolve_expression(expr.callee())?;
         for argument in expr.arguments() {
             self.resolve_expression(argument.as_ref())?;
@@ -143,33 +143,33 @@ impl<'a> expr::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_get_expr(&mut self, expr: &Get) -> Result<Object, Error> {
+    fn visit_get_expr(&mut self, expr: &Get) -> Result<Object, Box<Error>> {
         self.resolve_expression(expr.object().as_ref())?;
         Ok(Object::Nil)
     }
 
-    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Error> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, Box<Error>> {
         self.resolve_expression(expr.expression())?;
         Ok(Object::Nil)
     }
 
-    fn visit_literal_expr(&mut self, _: &Literal) -> Result<Object, Error> {
+    fn visit_literal_expr(&mut self, _: &Literal) -> Result<Object, Box<Error>> {
         Ok(Object::Nil)
     }
 
-    fn visit_logical_expr(&mut self, expr: &Logical) -> Result<Object, Error> {
+    fn visit_logical_expr(&mut self, expr: &Logical) -> Result<Object, Box<Error>> {
         self.resolve_expression(expr.left())?;
         self.resolve_expression(expr.right())?;
         Ok(Object::Nil)
     }
 
-    fn visit_set_expr(&mut self, expr: &Set) -> Result<Object, Error> {
+    fn visit_set_expr(&mut self, expr: &Set) -> Result<Object, Box<Error>> {
         self.resolve_expression(expr.value().as_ref())?;
         self.resolve_expression(expr.object().as_ref())?;
         Ok(Object::Nil)
     }
 
-    fn visit_super_expr(&mut self, expr: &Super) -> Result<Object, Error> {
+    fn visit_super_expr(&mut self, expr: &Super) -> Result<Object, Box<Error>> {
         if self.current_class == ClassType::None {
             eprintln!("Can't use 'super' outside of a class.");
         } else if self.current_class != ClassType::Subclass {
@@ -180,7 +180,7 @@ impl<'a> expr::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Error> {
+    fn visit_this_expr(&mut self, expr: &This) -> Result<Object, Box<Error>> {
         if self.current_class == ClassType::None {
             eprintln!("Cannot use 'this' outside of a class.");
             return Ok(Object::Nil);
@@ -190,12 +190,12 @@ impl<'a> expr::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Error> {
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, Box<Error>> {
         self.resolve_expression(expr.right())?;
         Ok(Object::Nil)
     }
 
-    fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Error> {
+    fn visit_variable_expr(&mut self, expr: &Variable) -> Result<Object, Box<Error>> {
         if !self.scopes.is_empty()
             && self.scopes.last().is_some()
             && self
@@ -214,14 +214,14 @@ impl<'a> expr::Visitor for Resolver<'a> {
 }
 
 impl<'a> stmt::Visitor for Resolver<'a> {
-    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<Object, Error> {
+    fn visit_block_stmt(&mut self, stmt: &Block) -> Result<Object, Box<Error>> {
         self.begin_scope();
         self.resolve(stmt.statements())?;
         self.end_scope();
         Ok(Object::Nil)
     }
 
-    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Error> {
+    fn visit_class_stmt(&mut self, stmt: &Class) -> Result<Object, Box<Error>> {
         let enclosing_class = self.current_class.clone();
         self.current_class = ClassType::Class;
 
@@ -269,12 +269,12 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Error> {
+    fn visit_expression_stmt(&mut self, stmt: &Expression) -> Result<Object, Box<Error>> {
         self.resolve_expression(stmt.expression())?;
         Ok(Object::Nil)
     }
 
-    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<Object, Error> {
+    fn visit_function_stmt(&mut self, stmt: &Function) -> Result<Object, Box<Error>> {
         self.declare(stmt.name());
         self.define(stmt.name());
 
@@ -282,7 +282,7 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_if_stmt(&mut self, stmt: &If) -> Result<Object, Error> {
+    fn visit_if_stmt(&mut self, stmt: &If) -> Result<Object, Box<Error>> {
         self.resolve_expression(stmt.condition())?;
         self.resolve_statement(stmt.then_branch())?;
         if let Some(else_branch) = stmt.else_branch() {
@@ -291,12 +291,12 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<Object, Error> {
+    fn visit_print_stmt(&mut self, stmt: &Print) -> Result<Object, Box<Error>> {
         self.resolve_expression(stmt.expression())?;
         Ok(Object::Nil)
     }
 
-    fn visit_return_stmt(&mut self, stmt: &Return) -> Result<Object, Error> {
+    fn visit_return_stmt(&mut self, stmt: &Return) -> Result<Object, Box<Error>> {
         if self.current_function == FunctionType::None {
             eprintln!(
                 "{} Cannot return from top-level code.",
@@ -317,7 +317,7 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<Object, Error> {
+    fn visit_var_stmt(&mut self, stmt: &Var) -> Result<Object, Box<Error>> {
         self.declare(stmt.name());
         if let Some(ref initializer) = stmt.initializer() {
             self.resolve_expression(initializer.as_ref())?;
@@ -326,7 +326,7 @@ impl<'a> stmt::Visitor for Resolver<'a> {
         Ok(Object::Nil)
     }
 
-    fn visit_while_stmt(&mut self, stmt: &While) -> Result<Object, Error> {
+    fn visit_while_stmt(&mut self, stmt: &While) -> Result<Object, Box<Error>> {
         self.resolve_expression(stmt.condition())?;
         self.resolve_statement(stmt.body())?;
         Ok(Object::Nil)

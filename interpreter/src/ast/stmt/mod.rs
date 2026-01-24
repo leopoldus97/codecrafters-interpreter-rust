@@ -42,18 +42,21 @@ use std::any::Any;
 use crate::{scanner::token::Object, utils::error::Error};
 
 pub trait Stmt: Any {
-    fn accept(&self, visitor: &mut dyn Visitor) -> Result<Object, Error>;
+    fn accept(&self, visitor: &mut dyn Visitor) -> Result<Object, Box<Error>>;
     fn as_any(&self) -> &dyn Any;
 }
 
 pub trait Visitor {
-    fn visit_block_stmt(&mut self, stmt: &block::Block) -> Result<Object, Error>;
-    fn visit_class_stmt(&mut self, stmt: &class::Class) -> Result<Object, Error>;
-    fn visit_expression_stmt(&mut self, stmt: &expression::Expression) -> Result<Object, Error>;
-    fn visit_function_stmt(&mut self, stmt: &function::Function) -> Result<Object, Error>;
-    fn visit_if_stmt(&mut self, stmt: &r#if::If) -> Result<Object, Error>;
-    fn visit_print_stmt(&mut self, stmt: &print::Print) -> Result<Object, Error>;
-    fn visit_return_stmt(&mut self, stmt: &r#return::Return) -> Result<Object, Error>;
-    fn visit_var_stmt(&mut self, stmt: &var::Var) -> Result<Object, Error>;
-    fn visit_while_stmt(&mut self, stmt: &r#while::While) -> Result<Object, Error>;
+    fn visit_block_stmt(&mut self, stmt: &block::Block) -> Result<Object, Box<Error>>;
+    fn visit_class_stmt(&mut self, stmt: &class::Class) -> Result<Object, Box<Error>>;
+    fn visit_expression_stmt(
+        &mut self,
+        stmt: &expression::Expression,
+    ) -> Result<Object, Box<Error>>;
+    fn visit_function_stmt(&mut self, stmt: &function::Function) -> Result<Object, Box<Error>>;
+    fn visit_if_stmt(&mut self, stmt: &r#if::If) -> Result<Object, Box<Error>>;
+    fn visit_print_stmt(&mut self, stmt: &print::Print) -> Result<Object, Box<Error>>;
+    fn visit_return_stmt(&mut self, stmt: &r#return::Return) -> Result<Object, Box<Error>>;
+    fn visit_var_stmt(&mut self, stmt: &var::Var) -> Result<Object, Box<Error>>;
+    fn visit_while_stmt(&mut self, stmt: &r#while::While) -> Result<Object, Box<Error>>;
 }

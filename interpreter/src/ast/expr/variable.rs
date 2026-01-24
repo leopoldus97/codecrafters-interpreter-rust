@@ -29,7 +29,7 @@ impl Expr for Variable {
         self.id
     }
 
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_variable_expr(self)
     }
 

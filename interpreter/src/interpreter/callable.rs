@@ -143,8 +143,9 @@ impl Callable for Function {
 
         let environment = Rc::new(RefCell::new(environment));
 
-        if let Err(Error::Runtime(Runtime::Return(r))) =
-            interpreter.execute_block(self.declaration.body(), environment)
+        if let Err(Error::Runtime(Runtime::Return(r))) = interpreter
+            .execute_block(self.declaration.body(), environment)
+            .map_err(|e| *e)
         {
             if self.is_initializer {
                 return self
@@ -190,20 +191,20 @@ impl Instance {
         &self.klass
     }
 
-    pub fn get(&self, name: &Token) -> Result<Option<Object>, Error> {
+    pub fn get(&self, name: &Token) -> Result<Option<Object>, Box<Error>> {
         if self.fields.contains_key(name.lexeme()) {
             Ok(Some(self.fields.get(name.lexeme()).unwrap().to_owned()))
         } else if let Some(_method) = self.klass.find_method(name.lexeme()) {
             // Return None to signal that this is a method (needs binding)
             Ok(None)
         } else {
-            Err(Error::Runtime(
+            Err(Box::new(Error::Runtime(
                 RuntimeError::new(
                     format!("Undefined property '{}'.", name.lexeme()),
                     name.to_owned(),
                 )
                 .into(),
-            ))
+            )))
         }
     }
 

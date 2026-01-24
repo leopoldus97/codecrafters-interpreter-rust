@@ -32,7 +32,7 @@ use std::any::Any;
 use crate::{scanner::token::Object, utils::error::Error};
 
 pub trait Expr: Any {
-    fn accept(&self, visitor: &mut dyn Visitor) -> Result<Object, Error>;
+    fn accept(&self, visitor: &mut dyn Visitor) -> Result<Object, Box<Error>>;
     fn as_any(&self) -> &dyn Any;
     fn id(&self) -> u64 {
         0
@@ -40,16 +40,16 @@ pub trait Expr: Any {
 }
 
 pub trait Visitor {
-    fn visit_assign_expr(&mut self, expr: &assign::Assign) -> Result<Object, Error>;
-    fn visit_binary_expr(&mut self, expr: &binary::Binary) -> Result<Object, Error>;
-    fn visit_call_expr(&mut self, expr: &call::Call) -> Result<Object, Error>;
-    fn visit_get_expr(&mut self, expr: &get::Get) -> Result<Object, Error>;
-    fn visit_grouping_expr(&mut self, expr: &grouping::Grouping) -> Result<Object, Error>;
-    fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<Object, Error>;
-    fn visit_logical_expr(&mut self, expr: &logical::Logical) -> Result<Object, Error>;
-    fn visit_set_expr(&mut self, expr: &set::Set) -> Result<Object, Error>;
-    fn visit_super_expr(&mut self, expr: &super_keyword::Super) -> Result<Object, Error>;
-    fn visit_this_expr(&mut self, expr: &this::This) -> Result<Object, Error>;
-    fn visit_unary_expr(&mut self, expr: &unary::Unary) -> Result<Object, Error>;
-    fn visit_variable_expr(&mut self, expr: &variable::Variable) -> Result<Object, Error>;
+    fn visit_assign_expr(&mut self, expr: &assign::Assign) -> Result<Object, Box<Error>>;
+    fn visit_binary_expr(&mut self, expr: &binary::Binary) -> Result<Object, Box<Error>>;
+    fn visit_call_expr(&mut self, expr: &call::Call) -> Result<Object, Box<Error>>;
+    fn visit_get_expr(&mut self, expr: &get::Get) -> Result<Object, Box<Error>>;
+    fn visit_grouping_expr(&mut self, expr: &grouping::Grouping) -> Result<Object, Box<Error>>;
+    fn visit_literal_expr(&mut self, expr: &literal::Literal) -> Result<Object, Box<Error>>;
+    fn visit_logical_expr(&mut self, expr: &logical::Logical) -> Result<Object, Box<Error>>;
+    fn visit_set_expr(&mut self, expr: &set::Set) -> Result<Object, Box<Error>>;
+    fn visit_super_expr(&mut self, expr: &super_keyword::Super) -> Result<Object, Box<Error>>;
+    fn visit_this_expr(&mut self, expr: &this::This) -> Result<Object, Box<Error>>;
+    fn visit_unary_expr(&mut self, expr: &unary::Unary) -> Result<Object, Box<Error>>;
+    fn visit_variable_expr(&mut self, expr: &variable::Variable) -> Result<Object, Box<Error>>;
 }

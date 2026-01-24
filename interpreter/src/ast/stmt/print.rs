@@ -19,7 +19,7 @@ impl Print {
 }
 
 impl Stmt for Print {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_print_stmt(self)
     }
 

@@ -28,7 +28,7 @@ impl Return {
 }
 
 impl Stmt for Return {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_return_stmt(self)
     }
 

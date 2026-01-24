@@ -32,7 +32,7 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Rc<dyn Stmt>>, Error> {
+    pub fn parse(&mut self) -> Result<Vec<Rc<dyn Stmt>>, Box<Error>> {
         let mut statements: Vec<Rc<dyn Stmt>> = Vec::new();
         while !self.is_at_end() {
             let declaration = self.declaration();

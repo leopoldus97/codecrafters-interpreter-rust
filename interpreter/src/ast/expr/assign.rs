@@ -37,7 +37,7 @@ impl Expr for Assign {
         self.id
     }
 
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_assign_expr(self)
     }
 
