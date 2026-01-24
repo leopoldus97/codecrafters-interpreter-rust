@@ -19,7 +19,7 @@ impl Block {
 }
 
 impl Stmt for Block {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_block_stmt(self)
     }
 

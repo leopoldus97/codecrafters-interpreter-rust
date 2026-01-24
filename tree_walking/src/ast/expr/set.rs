@@ -1,6 +1,9 @@
 use std::rc::Rc;
 
-use crate::scanner::token::{Object, Token};
+use crate::{
+    scanner::token::{Object, Token},
+    utils::error::Error,
+};
 
 use super::Expr;
 
@@ -33,10 +36,7 @@ impl Set {
 }
 
 impl Expr for Set {
-    fn accept(
-        &self,
-        visitor: &mut dyn super::Visitor,
-    ) -> Result<Object, crate::utils::error::Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_set_expr(self)
     }
 

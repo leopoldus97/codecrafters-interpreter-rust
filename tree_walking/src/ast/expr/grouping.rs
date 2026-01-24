@@ -19,7 +19,7 @@ impl Grouping {
 }
 
 impl Expr for Grouping {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_grouping_expr(self)
     }
 

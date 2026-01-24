@@ -45,7 +45,7 @@ impl Function {
 }
 
 impl Stmt for Function {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_function_stmt(self)
     }
 

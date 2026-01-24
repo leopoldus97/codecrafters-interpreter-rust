@@ -27,7 +27,7 @@ impl Unary {
 }
 
 impl Expr for Unary {
-    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Error> {
+    fn accept(&self, visitor: &mut dyn super::Visitor) -> Result<Object, Box<Error>> {
         visitor.visit_unary_expr(self)
     }
 
