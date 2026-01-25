@@ -25,8 +25,8 @@ jobs:
           branch_name=${{ steps.vars.outputs.branch_name }}
           echo "Branch name: $branch_name"
           if [[ "$branch_name" == feature/* ]]; then
-            label="feature"
-          elif [[ "$branch_name" == bug/* ]]; then
+            label="chapter"
+          elif [[ "$branch_name" == bugfix/* ]]; then
             label="bug"
           elif [[ "$branch_name" == chore/* ]]; then
             label="chore"
