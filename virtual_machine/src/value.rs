@@ -1,4 +1,3 @@
-
 use std::fmt;
 
 pub type Value = f64;
