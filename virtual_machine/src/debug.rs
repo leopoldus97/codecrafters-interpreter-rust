@@ -32,8 +32,15 @@ impl Chunk {
     }
 
     fn constant_instruction(&self, name: &str, offset: usize) -> usize {
+        if self.code().len() <= offset + 1 {
+            println!("Error: Incomplete constant instruction at offset {offset}");
+            return offset + 1;
+        }
+
         let constant_idx = self.code()[offset + 1];
-        let value = self.read_constant(constant_idx);
+        let value = self
+            .read_constant(constant_idx)
+            .expect("Invalid constant index");
         println!("{name} {constant_idx:4} '{value}'");
         offset + 2
     }

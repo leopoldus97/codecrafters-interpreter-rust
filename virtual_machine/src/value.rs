@@ -2,6 +2,11 @@ use std::fmt;
 
 pub type Value = f64;
 
+#[derive(Default)]
+pub struct ValueArray {
+    values: Vec<Value>,
+}
+
 impl fmt::Display for ValueArray {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
@@ -15,22 +20,17 @@ impl fmt::Display for ValueArray {
     }
 }
 
-#[derive(Default)]
-pub struct ValueArray {
-    values: Vec<Value>,
-}
-
 impl ValueArray {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn write(&mut self, value: Value) {
         self.values.push(value);
     }
 
-    pub fn get(&self, index: usize) -> Value {
-        self.values[index]
+    pub fn get(&self, index: usize) -> Option<Value> {
+        if index >= self.values.len() {
+            return None;
+        }
+
+        Some(self.values[index])
     }
 
     pub fn len(&self) -> usize {

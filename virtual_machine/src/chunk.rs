@@ -3,8 +3,8 @@ use crate::value::{Value, ValueArray};
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpCode {
-    OpReturn,
-    OpConstant,
+    OpReturn = 0,
+    OpConstant = 1,
 }
 
 impl TryFrom<u8> for OpCode {
@@ -27,10 +27,6 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn write(&mut self, byte: u8, line: usize) {
         self.code.push(byte);
         self.lines.push(line);
@@ -46,10 +42,14 @@ impl Chunk {
     }
 
     pub fn line(&self, offset: usize) -> usize {
+        if offset >= self.lines.len() {
+            return 0;
+        }
+
         self.lines[offset]
     }
 
-    pub fn read_constant(&self, index: u8) -> Value {
+    pub fn read_constant(&self, index: u8) -> Option<Value> {
         self.constants.get(index as usize)
     }
 
