@@ -39,10 +39,10 @@ impl VM {
         self.chunk.read_constant(index)
     }
 
-    pub fn interpret(&mut self, chunk: Chunk) {
+    pub fn interpret(&mut self, chunk: Chunk) -> InterpretResult {
         self.chunk = chunk;
         self.ip = 0;
-        self.run();
+        self.run()
     }
 
     pub fn push(&mut self, value: Value) {
@@ -55,7 +55,7 @@ impl VM {
         self.stack.pop()
     }
 
-    fn run(&mut self) -> Option<InterpretResult> {
+    fn run(&mut self) -> InterpretResult {
         loop {
             if DEBUG_TRACE_EXECUTION {
                 print!("          ");
@@ -66,53 +66,81 @@ impl VM {
 
                 self.chunk.disassemble_instruction(self.ip);
             }
-            let _instruction = match self.read_byte() {
-                x if x == Some(OpCode::OpConstant as u8) => {
-                    let constant = self.read_constant().unwrap();
-                    self.push(constant);
-                    println!("{constant}");
-                    None
-                }
-                x if x == Some(OpCode::OpNegate as u8) => {
-                    let value = self.pop().unwrap();
-                    self.push(-value);
-                    println!("{}", -value);
-                    None
-                }
-                x if x == Some(OpCode::OpAdd as u8) => {
-                    let b = self.pop().unwrap();
-                    let a = self.pop().unwrap();
-                    self.push(a + b);
-                    println!("{}", a + b);
-                    None
-                }
-                x if x == Some(OpCode::OpSubtract as u8) => {
-                    let b = self.pop().unwrap();
-                    let a = self.pop().unwrap();
-                    self.push(a - b);
-                    println!("{}", a - b);
-                    None
-                }
-                x if x == Some(OpCode::OpMultiply as u8) => {
-                    let b = self.pop().unwrap();
-                    let a = self.pop().unwrap();
-                    self.push(a * b);
-                    println!("{}", a * b);
-                    None
-                }
-                x if x == Some(OpCode::OpDivide as u8) => {
-                    let b = self.pop().unwrap();
-                    let a = self.pop().unwrap();
-                    self.push(a / b);
-                    println!("{}", a / b);
-                    None
-                }
-                x if x == Some(OpCode::OpReturn as u8) => {
-                    println!("{}", self.pop().unwrap());
-                    Some(InterpretResult::Ok)
-                }
-                _ => None
+            
+            let byte = match self.read_byte() {
+                Some(byte) => byte,
+                None => return InterpretResult::RuntimeError,
             };
+
+            match OpCode::try_from(byte) {
+                Ok(OpCode::OpConstant) => {
+                    let constant = match self.read_constant() {
+                        Some(constant) => constant,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    self.push(constant);
+                }
+                Ok(OpCode::OpNegate) => {
+                    let value = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    self.push(-value);
+                }
+                Ok(OpCode::OpAdd) => {
+                    let b = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    let a = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    self.push(a + b);
+                }
+                Ok(OpCode::OpSubtract) => {
+                    let b = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    let a = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    self.push(a - b);
+                }
+                Ok(OpCode::OpMultiply) => {
+                    let b = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    let a = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    self.push(a * b);
+                }
+                Ok(OpCode::OpDivide) => {
+                    let b = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    let a = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    self.push(a / b);
+                }
+                Ok(OpCode::OpReturn) => {
+                    let value = match self.pop() {
+                        Some(value) => value,
+                        None => return InterpretResult::RuntimeError,
+                    };
+                    println!("{}", value);
+                    return InterpretResult::Ok;
+                }
+                Err(_) => return InterpretResult::RuntimeError,
+            }
         }
     }
 }
