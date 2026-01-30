@@ -1,29 +1,51 @@
-use virtual_machine::{chunk::{Chunk, OpCode}, vm::VM};
+use std::{env, fs, io::{self, Write}, process};
+
+use virtual_machine::vm::{InterpretResult, VM};
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    
     let mut vm = VM::new();
 
-    let mut chunk = Chunk::default();
+    match args.len() {
+        1 => repl(&mut vm),
+        2 => run_file(&mut vm, &args[1]),
+        _ => {
+            eprintln!("Usage: clox {}", args[0]);
+            process::exit(64);
+        }
+    }
+}
 
-    let constant = chunk.add_constant(1.2);
-    chunk.write(OpCode::OpConstant as u8, 123);
-    chunk.write(constant as u8, 123);
+fn run_file(vm: &mut VM, file_path: &String) {
+    let file_contents = fs::read_to_string(file_path).unwrap_or_else(|_| {
+        eprintln!("Error reading file '{}'", file_path);
+        process::exit(74);
+    });
 
-    let constant = chunk.add_constant(3.4);
-    chunk.write(OpCode::OpConstant as u8, 123);
-    chunk.write(constant as u8, 123);
+    let result = vm.interpret(&file_contents);
 
-    chunk.write(OpCode::OpAdd as u8, 123);
+    if result == InterpretResult::CompileError {
+        process::exit(65);
+    }
 
-    let constant = chunk.add_constant(5.6);
-    chunk.write(OpCode::OpConstant as u8, 123);
-    chunk.write(constant as u8, 123);
+    if result == InterpretResult::RuntimeError {
+        process::exit(70);
+    }
+}
 
-    chunk.write(OpCode::OpDivide as u8, 123);
-    chunk.write(OpCode::OpNegate as u8, 123);
+fn repl(vm: &mut VM) {
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
 
-    chunk.write(OpCode::OpReturn as u8, 123);
+        let mut line = String::new();
+        io::stdin().read_line(&mut line).unwrap();
 
-    chunk.disassemble("test chunk");
-    vm.interpret(chunk);
+        if line.trim().is_empty() {
+            break;
+        }
+
+        vm.interpret(&line);
+    }
 }

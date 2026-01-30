@@ -1,8 +1,9 @@
-use crate::{chunk::{Chunk, OpCode}, value::Value};
+use crate::{chunk::{Chunk, OpCode}, value::Value, compiler::Compiler};
 
 const DEBUG_TRACE_EXECUTION: bool = true;
 const STACK_MAX: usize = 256;
 
+#[derive(PartialEq)]
 pub enum InterpretResult {
     Ok,
     CompileError,
@@ -39,10 +40,9 @@ impl VM {
         self.chunk.read_constant(index)
     }
 
-    pub fn interpret(&mut self, chunk: Chunk) -> InterpretResult {
-        self.chunk = chunk;
-        self.ip = 0;
-        self.run()
+    pub fn interpret(&mut self, source: &str) -> InterpretResult {
+        let mut compiler = Compiler::new(source);
+        compiler.compile(source)
     }
 
     pub fn push(&mut self, value: Value) {
