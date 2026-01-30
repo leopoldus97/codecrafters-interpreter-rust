@@ -1,6 +1,10 @@
-use crate::{chunk::{Chunk, OpCode}, value::Value, compiler::Compiler};
+use crate::{
+    chunk::{Chunk, OpCode},
+    compiler::Compiler,
+    value::Value,
+};
 
-const DEBUG_TRACE_EXECUTION: bool = true;
+const _DEBUG_TRACE_EXECUTION: bool = true;
 const STACK_MAX: usize = 256;
 
 #[derive(PartialEq)]
@@ -28,21 +32,21 @@ impl VM {
     }
 
     #[inline]
-    fn read_byte(&mut self) -> Option<u8> {
+    fn _read_byte(&mut self) -> Option<u8> {
         let byte = *self.chunk.code().get(self.ip)?;
         self.ip += 1;
         Some(byte)
     }
 
     #[inline]
-    fn read_constant(&mut self) -> Option<Value> {
-        let index = self.read_byte()?;
+    fn _read_constant(&mut self) -> Option<Value> {
+        let index = self._read_byte()?;
         self.chunk.read_constant(index)
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
         let mut compiler = Compiler::new(source);
-        compiler.compile(source)
+        compiler.compile()
     }
 
     pub fn push(&mut self, value: Value) {
@@ -55,9 +59,9 @@ impl VM {
         self.stack.pop()
     }
 
-    fn run(&mut self) -> InterpretResult {
+    fn _run(&mut self) -> InterpretResult {
         loop {
-            if DEBUG_TRACE_EXECUTION {
+            if _DEBUG_TRACE_EXECUTION {
                 print!("          ");
                 for slot in &self.stack[..self.stack_top] {
                     print!("[ {slot} ]");
@@ -66,15 +70,15 @@ impl VM {
 
                 self.chunk.disassemble_instruction(self.ip);
             }
-            
-            let byte = match self.read_byte() {
+
+            let byte = match self._read_byte() {
                 Some(byte) => byte,
                 None => return InterpretResult::RuntimeError,
             };
 
             match OpCode::try_from(byte) {
                 Ok(OpCode::OpConstant) => {
-                    let constant = match self.read_constant() {
+                    let constant = match self._read_constant() {
                         Some(constant) => constant,
                         None => return InterpretResult::RuntimeError,
                     };
@@ -142,5 +146,11 @@ impl VM {
                 Err(_) => return InterpretResult::RuntimeError,
             }
         }
+    }
+}
+
+impl Default for VM {
+    fn default() -> Self {
+        Self::new()
     }
 }

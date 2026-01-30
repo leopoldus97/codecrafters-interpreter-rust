@@ -1,10 +1,14 @@
-use std::{env, fs, io::{self, Write}, process};
+use std::{
+    env, fs,
+    io::{self, Write},
+    process,
+};
 
 use virtual_machine::vm::{InterpretResult, VM};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    
+
     let mut vm = VM::new();
 
     match args.len() {

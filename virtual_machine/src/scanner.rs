@@ -272,7 +272,9 @@ impl<'a> Scanner<'a> {
     }
 
     fn identifier_type(&self) -> TokenType {
-        match self.source[self.start..self.current].as_bytes() {
+        let slice = &self.source.as_bytes()[self.start..self.current];
+
+        match slice {
             b"and" => TokenType::And,
             b"class" => TokenType::Class,
             b"else" => TokenType::Else,

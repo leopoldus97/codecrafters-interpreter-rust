@@ -1,4 +1,7 @@
-use crate::{scanner::{Scanner, TokenType}, vm::InterpretResult};
+use crate::{
+    scanner::{Scanner, TokenType},
+    vm::InterpretResult,
+};
 
 pub struct Compiler<'a> {
     pub scanner: Scanner<'a>,
@@ -11,7 +14,7 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn compile(&mut self, source: &str) -> InterpretResult {
+    pub fn compile(&mut self) -> InterpretResult {
         // Compilation logic goes here
         let mut line = 0;
 
@@ -30,6 +33,6 @@ impl<'a> Compiler<'a> {
             }
         }
 
-         InterpretResult::Ok
+        InterpretResult::Ok
     }
 }
