@@ -23,6 +23,11 @@ impl Chunk {
 
         match OpCode::try_from(instruction) {
             Ok(OpCode::OpReturn) => simple_instruction("OP_RETURN", offset),
+            Ok(OpCode::OpAdd) => simple_instruction("OP_ADD", offset),
+            Ok(OpCode::OpSubtract) => simple_instruction("OP_SUBTRACT", offset),
+            Ok(OpCode::OpMultiply) => simple_instruction("OP_MULTIPLY", offset),
+            Ok(OpCode::OpDivide) => simple_instruction("OP_DIVIDE", offset),
+            Ok(OpCode::OpNegate) => simple_instruction("OP_NEGATE", offset),
             Ok(OpCode::OpConstant) => self.constant_instruction("OP_CONSTANT", offset),
             Err(byte) => {
                 println!("Unknown opcode {byte}");
