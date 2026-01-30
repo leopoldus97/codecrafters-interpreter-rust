@@ -96,21 +96,17 @@ impl VM {
                     };
                     self.push(-value);
                 }
-                Ok(OpCode::OpAdd) => match self.binary_op(|a, b| a + b) {
-                    Some(()) => {}
-                    None => return InterpretResult::RuntimeError,
+                Ok(OpCode::OpAdd) => if self.binary_op(|a, b| a + b).is_none() {
+                    return InterpretResult::RuntimeError;
                 },
-                Ok(OpCode::OpSubtract) => match self.binary_op(|a, b| a - b) {
-                    Some(()) => {}
-                    None => return InterpretResult::RuntimeError,
+                Ok(OpCode::OpSubtract) => if self.binary_op(|a, b| a - b).is_none() {
+                    return InterpretResult::RuntimeError;
                 },
-                Ok(OpCode::OpMultiply) => match self.binary_op(|a, b| a * b) {
-                    Some(()) => {}
-                    None => return InterpretResult::RuntimeError,
+                Ok(OpCode::OpMultiply) => if self.binary_op(|a, b| a * b).is_none() {
+                    return InterpretResult::RuntimeError;
                 },
-                Ok(OpCode::OpDivide) => match self.binary_op(|a, b| a / b) {
-                    Some(()) => {}
-                    None => return InterpretResult::RuntimeError,
+                Ok(OpCode::OpDivide) => if self.binary_op(|a, b| a / b).is_none() {
+                    return InterpretResult::RuntimeError;
                 },
                 Ok(OpCode::OpReturn) => {
                     let value = match self.pop() {

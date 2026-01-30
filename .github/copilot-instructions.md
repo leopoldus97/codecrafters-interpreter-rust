@@ -7,7 +7,7 @@ A **Rust implementation of the Lox programming language** for the CodeCrafters "
 | Crate | Version | Status | Description |
 |-------|---------|--------|-------------|
 | `tree_walking/` | 1.0.0 | ✅ Complete | Tree-walk interpreter (fully functional) |
-| `virtual_machine/` | 0.1.0 | ⚠️ WIP | Bytecode VM (has compilation errors, in development) |
+| `virtual_machine/` | 0.1.0 | ⚠️ WIP | Bytecode VM (in development) |
 
 **Languages/Tools**: Rust (stable toolchain), Cargo workspace  
 **Dependencies**: None outside standard library
@@ -32,12 +32,6 @@ cargo fmt -- --check
 
 # ✅ WORKING - Run interpreter with a .lox file
 cargo run -p tree_walking -- test.lox
-
-# ⚠️ FAILS - Full workspace build (vm has errors)
-cargo build  # Will fail due to virtual_machine errors
-
-# ⚠️ FAILS - Full workspace test
-cargo test   # Will fail due to virtual_machine errors
 ```
 
 ### CI Pipeline Checks (`.github/workflows/pull_request.yml`)
