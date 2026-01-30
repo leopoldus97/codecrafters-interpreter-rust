@@ -1,4 +1,7 @@
-use virtual_machine::{chunk::{Chunk, OpCode}, vm::VM};
+use virtual_machine::{
+    chunk::{Chunk, OpCode},
+    vm::VM,
+};
 
 fn main() {
     let mut vm = VM::new();

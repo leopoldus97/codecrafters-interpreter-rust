@@ -136,3 +136,9 @@ impl VM {
         Some(())
     }
 }
+
+impl Default for VM {
+    fn default() -> Self {
+        Self::new()
+    }
+}
