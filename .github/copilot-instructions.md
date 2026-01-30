@@ -6,7 +6,7 @@ A **Rust implementation of the Lox programming language** for the CodeCrafters "
 
 | Crate | Version | Status | Description |
 |-------|---------|--------|-------------|
-| `tree_walking/` | 0.9.0 | ✅ Complete | Tree-walk interpreter (fully functional) |
+| `tree_walking/` | 1.0.0 | ✅ Complete | Tree-walk interpreter (fully functional) |
 | `virtual_machine/` | 0.1.0 | ⚠️ WIP | Bytecode VM (has compilation errors, in development) |
 
 **Languages/Tools**: Rust (stable toolchain), Cargo workspace  
@@ -149,11 +149,9 @@ Same pattern as expressions, but in `ast/stmt/` directory.
 
 ## Known Issues
 
-1. **virtual_machine/src/vm.rs has compile errors** - The VM is incomplete. Do not attempt to build the full workspace until vm.rs is fixed.
+1. **Format differences may exist** - Always run `cargo fmt` before committing.
 
-2. **Format differences may exist** - Always run `cargo fmt` before committing.
-
-3. **Clippy warnings are errors in CI** - Use `cargo clippy -- -D warnings` to catch issues locally.
+2. **Clippy warnings are errors in CI** - Use `cargo clippy -- -D warnings` to catch issues locally.
 
 ---
 

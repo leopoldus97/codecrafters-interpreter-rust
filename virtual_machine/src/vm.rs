@@ -1,4 +1,7 @@
-use crate::{chunk::{Chunk, OpCode}, value::Value};
+use crate::{
+    chunk::{Chunk, OpCode},
+    value::Value,
+};
 
 const DEBUG_TRACE_EXECUTION: bool = true;
 const STACK_MAX: usize = 256;
@@ -10,10 +13,10 @@ pub enum InterpretResult {
 }
 
 pub struct VM {
-    pub chunk: Chunk,
-    pub ip: usize,
-    pub stack: Vec<Value>,
-    pub stack_top: usize,
+    chunk: Chunk,
+    ip: usize,
+    stack: Vec<Value>,
+    stack_top: usize,
 }
 
 impl VM {
@@ -46,11 +49,17 @@ impl VM {
     }
 
     pub fn push(&mut self, value: Value) {
+        if self.stack_top >= STACK_MAX {
+            panic!("Stack overflow: attempted to push past STACK_MAX ({STACK_MAX})");
+        }
         self.stack.push(value);
         self.stack_top += 1;
     }
 
     pub fn pop(&mut self) -> Option<Value> {
+        if self.stack_top == 0 {
+            return None;
+        }
         self.stack_top -= 1;
         self.stack.pop()
     }
@@ -66,7 +75,7 @@ impl VM {
 
                 self.chunk.disassemble_instruction(self.ip);
             }
-            
+
             let byte = match self.read_byte() {
                 Some(byte) => byte,
                 None => return InterpretResult::RuntimeError,
@@ -87,50 +96,22 @@ impl VM {
                     };
                     self.push(-value);
                 }
-                Ok(OpCode::OpAdd) => {
-                    let b = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    let a = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    self.push(a + b);
-                }
-                Ok(OpCode::OpSubtract) => {
-                    let b = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    let a = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    self.push(a - b);
-                }
-                Ok(OpCode::OpMultiply) => {
-                    let b = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    let a = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    self.push(a * b);
-                }
-                Ok(OpCode::OpDivide) => {
-                    let b = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    let a = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    self.push(a / b);
-                }
+                Ok(OpCode::OpAdd) => match self.binary_op(|a, b| a + b) {
+                    Some(()) => {}
+                    None => return InterpretResult::RuntimeError,
+                },
+                Ok(OpCode::OpSubtract) => match self.binary_op(|a, b| a - b) {
+                    Some(()) => {}
+                    None => return InterpretResult::RuntimeError,
+                },
+                Ok(OpCode::OpMultiply) => match self.binary_op(|a, b| a * b) {
+                    Some(()) => {}
+                    None => return InterpretResult::RuntimeError,
+                },
+                Ok(OpCode::OpDivide) => match self.binary_op(|a, b| a / b) {
+                    Some(()) => {}
+                    None => return InterpretResult::RuntimeError,
+                },
                 Ok(OpCode::OpReturn) => {
                     let value = match self.pop() {
                         Some(value) => value,
@@ -142,5 +123,16 @@ impl VM {
                 Err(_) => return InterpretResult::RuntimeError,
             }
         }
+    }
+
+    fn binary_op<F>(&mut self, op: F) -> Option<()>
+    where
+        F: Fn(f64, f64) -> f64,
+    {
+        let b = self.pop()?;
+        let a = self.pop()?;
+        self.push(op(a, b));
+
+        Some(())
     }
 }
