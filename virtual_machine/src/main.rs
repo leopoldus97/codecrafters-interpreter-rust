@@ -1,5 +1,8 @@
 use std::{
-    env, fs, io::{self, Write}, path::PathBuf, process
+    env, fs,
+    io::{self, Write},
+    path::PathBuf,
+    process,
 };
 
 use virtual_machine::vm::{InterpretResult, VM};
