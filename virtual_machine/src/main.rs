@@ -23,13 +23,25 @@ fn main() {
 }
 
 fn run_file(vm: &mut VM, file_name: &String) {
-    if file_name.contains("..") || file_name.contains("/") || file_name.contains("\\") {
-        return;
-    }
     let file_path = PathBuf::from(file_name);
 
-    let file_contents = fs::read_to_string(&file_path).unwrap_or_else(|_| {
-        eprintln!("Error reading file '{:?}'", file_path);
+    // Validate that the file has a .lox extension
+    match file_path.extension() {
+        Some(ext) if ext.eq_ignore_ascii_case("lox") => {}
+        _ => {
+            eprintln!("Error: File must have a .lox extension");
+            process::exit(64);
+        }
+    }
+
+    // Canonicalize the path to resolve any symbolic links and relative components
+    let canonical_path = fs::canonicalize(&file_path).unwrap_or_else(|_| {
+        eprintln!("Error: Cannot resolve path '{}'", file_name);
+        process::exit(74);
+    });
+
+    let file_contents = fs::read_to_string(&canonical_path).unwrap_or_else(|_| {
+        eprintln!("Error reading file '{:?}'", canonical_path);
         process::exit(74);
     });
 

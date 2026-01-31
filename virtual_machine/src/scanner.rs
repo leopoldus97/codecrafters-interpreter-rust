@@ -79,7 +79,7 @@ impl<'a> Scanner<'a> {
 
         self.start = self.current;
 
-        if self.is_at_end() {
+        if self.is_at_end(None) {
             return self.make_token(TokenType::Eof);
         }
 
@@ -170,7 +170,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn match_char(&mut self, expected: char) -> bool {
-        if self.is_at_end() {
+        if self.is_at_end(None) {
             return false;
         }
         if self.peek().is_none_or(|val| val != expected) {
@@ -187,8 +187,10 @@ impl<'a> Scanner<'a> {
         c
     }
 
-    fn is_at_end(&self) -> bool {
-        self.current >= self.source.len()
+    fn is_at_end(&self, offset: Option<usize>) -> bool {
+        let offset = offset.unwrap_or(0);
+
+        self.current + offset >= self.source.chars().count()
     }
 
     fn identifier(&mut self) -> Token<'a> {
@@ -227,7 +229,7 @@ impl<'a> Scanner<'a> {
             self.current += 1;
         }
 
-        if self.is_at_end() {
+        if self.is_at_end(None) {
             return self.error_token("Unterminated string.");
         }
 
@@ -255,11 +257,19 @@ impl<'a> Scanner<'a> {
     }
 
     fn peek(&mut self) -> Option<char> {
-        self.source.chars().nth(self.current)
+        if self.is_at_end(None) {
+            None
+        } else {
+            Some(self.source.as_bytes()[self.current] as char)
+        }
     }
 
     fn peek_next(&mut self) -> Option<char> {
-        self.source.chars().nth(self.current + 1)
+        if self.is_at_end(Some(1)) {
+            None
+        } else {
+            Some(self.source.as_bytes()[self.current + 1] as char)
+        }
     }
 
     fn consume_digits(&mut self) {
