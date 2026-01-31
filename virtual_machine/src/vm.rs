@@ -15,17 +15,17 @@ pub enum InterpretResult {
 }
 
 pub struct VM {
-    pub chunk: Chunk,
-    pub ip: usize,
-    pub stack: Vec<Value>,
-    pub stack_top: usize,
+    _chunk: Chunk,
+    _ip: usize,
+    stack: Vec<Value>,
+    stack_top: usize,
 }
 
 impl VM {
     pub fn new() -> Self {
         Self {
-            chunk: Chunk::default(),
-            ip: 0,
+            _chunk: Chunk::default(),
+            _ip: 0,
             stack: Vec::with_capacity(STACK_MAX),
             stack_top: 0,
         }
@@ -33,15 +33,15 @@ impl VM {
 
     #[inline]
     fn _read_byte(&mut self) -> Option<u8> {
-        let byte = *self.chunk.code().get(self.ip)?;
-        self.ip += 1;
+        let byte = *self._chunk.code().get(self._ip)?;
+        self._ip += 1;
         Some(byte)
     }
 
     #[inline]
     fn _read_constant(&mut self) -> Option<Value> {
         let index = self._read_byte()?;
-        self.chunk.read_constant(index)
+        self._chunk.read_constant(index)
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
@@ -55,6 +55,9 @@ impl VM {
     }
 
     pub fn pop(&mut self) -> Option<Value> {
+        if self.stack_top == 0 {
+            return None;
+        }
         self.stack_top -= 1;
         self.stack.pop()
     }
@@ -68,7 +71,7 @@ impl VM {
                 }
                 println!();
 
-                self.chunk.disassemble_instruction(self.ip);
+                self._chunk.disassemble_instruction(self._ip);
             }
 
             let byte = match self._read_byte() {
@@ -92,48 +95,24 @@ impl VM {
                     self.push(-value);
                 }
                 Ok(OpCode::OpAdd) => {
-                    let b = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    let a = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    self.push(a + b);
+                    if self._binary_op(|a, b| a + b).is_none() {
+                        return InterpretResult::RuntimeError;
+                    }
                 }
                 Ok(OpCode::OpSubtract) => {
-                    let b = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    let a = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    self.push(a - b);
+                    if self._binary_op(|a, b| a - b).is_none() {
+                        return InterpretResult::RuntimeError;
+                    }
                 }
                 Ok(OpCode::OpMultiply) => {
-                    let b = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    let a = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    self.push(a * b);
+                    if self._binary_op(|a, b| a * b).is_none() {
+                        return InterpretResult::RuntimeError;
+                    }
                 }
                 Ok(OpCode::OpDivide) => {
-                    let b = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    let a = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    self.push(a / b);
+                    if self._binary_op(|a, b| a / b).is_none() {
+                        return InterpretResult::RuntimeError;
+                    }
                 }
                 Ok(OpCode::OpReturn) => {
                     let value = match self.pop() {
@@ -146,6 +125,17 @@ impl VM {
                 Err(_) => return InterpretResult::RuntimeError,
             }
         }
+    }
+
+    fn _binary_op<F>(&mut self, op: F) -> Option<()>
+    where
+        F: Fn(f64, f64) -> f64,
+    {
+        let b = self.pop()?;
+        let a = self.pop()?;
+        self.push(op(a, b));
+
+        Some(())
     }
 }
 
