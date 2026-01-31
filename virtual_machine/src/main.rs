@@ -1,7 +1,5 @@
 use std::{
-    env, fs,
-    io::{self, Write},
-    process,
+    env, fs, io::{self, Write}, path::PathBuf, process
 };
 
 use virtual_machine::vm::{InterpretResult, VM};
@@ -21,9 +19,14 @@ fn main() {
     }
 }
 
-fn run_file(vm: &mut VM, file_path: &String) {
-    let file_contents = fs::read_to_string(file_path).unwrap_or_else(|_| {
-        eprintln!("Error reading file '{}'", file_path);
+fn run_file(vm: &mut VM, file_name: &String) {
+    if file_name.contains("..") || file_name.contains("/") || file_name.contains("\\") {
+        return;
+    }
+    let file_path = PathBuf::from(file_name);
+
+    let file_contents = fs::read_to_string(&file_path).unwrap_or_else(|_| {
+        eprintln!("Error reading file '{:?}'", file_path);
         process::exit(74);
     });
 
