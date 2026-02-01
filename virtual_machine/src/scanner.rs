@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -50,11 +50,23 @@ pub enum TokenType {
     Eof,
 }
 
+#[derive(Clone, Copy)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub start: &'a str,
     pub length: usize,
     pub line: usize,
+}
+
+impl Default for Token<'_> {
+    fn default() -> Self {
+        Self {
+            token_type: TokenType::Eof,
+            start: "",
+            length: 0,
+            line: 0,
+        }
+    }
 }
 
 pub struct Scanner<'a> {
