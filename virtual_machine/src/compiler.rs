@@ -290,22 +290,12 @@ fn binary_infix(c: &mut Compiler, _can_assign: bool) {
 //     c.variable();
 // }
 
+#[derive(Default)]
 pub struct Parser<'a> {
     current: Token<'a>,
     previous: Token<'a>,
     had_error: bool,
     panic_mode: bool,
-}
-
-impl Default for Parser<'_> {
-    fn default() -> Self {
-        Self {
-            current: Token::default(),
-            previous: Token::default(),
-            had_error: false,
-            panic_mode: false,
-        }
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -385,11 +375,9 @@ impl<'a> Compiler<'a> {
 
     fn end_compiler(&mut self) {
         self.emit_return();
-        if DEBUG_PRINT_CODE {
-            if !self.parser.had_error {
-                if let Some(chunk) = &self.current_chunk {
-                    chunk.disassemble("code");
-                }
+        if DEBUG_PRINT_CODE && !self.parser.had_error {
+            if let Some(chunk) = &self.current_chunk {
+                chunk.disassemble("code");
             }
         }
     }
@@ -411,7 +399,7 @@ impl<'a> Compiler<'a> {
             TokenType::Minus => self.emit_byte(OpCode::OpSubtract as u8),
             TokenType::Star => self.emit_byte(OpCode::OpMultiply as u8),
             TokenType::Slash => self.emit_byte(OpCode::OpDivide as u8),
-            _ => return, // Unreachable.
+            _ => (), // Unreachable.
         }
     }
 
@@ -422,10 +410,13 @@ impl<'a> Compiler<'a> {
         self.parse_precedence(Precedence::Unary as u8);
 
         // Emit the operator instruction.
-        match operator_type {
-            TokenType::Minus => self.emit_byte(OpCode::OpNegate as u8),
-            //TokenType::Bang => self.emit_byte(OpCode::OpNot as u8),
-            _ => return, // Unreachable.
+        // match operator_type {
+        //     TokenType::Minus => self.emit_byte(OpCode::OpNegate as u8),
+        //     TokenType::Bang => self.emit_byte(OpCode::OpNot as u8),
+        //     _ => (), // Unreachable.
+        // }
+        if operator_type == TokenType::Minus {
+            self.emit_byte(OpCode::OpNegate as u8);
         }
     }
 
@@ -486,13 +477,13 @@ impl<'a> Compiler<'a> {
     }
 
     fn error_at_current(&mut self, message: &str) {
-        let token = self.parser.current.clone();
+        let token = self.parser.current;
 
         self.error_at(&token, message);
     }
 
     fn error(&mut self, message: &str) {
-        let token = self.parser.previous.clone();
+        let token = self.parser.previous;
 
         self.error_at(&token, message);
     }
@@ -512,7 +503,7 @@ impl<'a> Compiler<'a> {
             eprint!(" at '{}' -> {}", token.start, token.length);
         }
 
-        eprint!(": {}\n", message);
+        eprintln!(": {}", message);
 
         self.parser.had_error = true;
     }

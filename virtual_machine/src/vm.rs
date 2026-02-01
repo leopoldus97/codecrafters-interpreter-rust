@@ -1,5 +1,7 @@
 use crate::{
-    chunk::{Chunk, OpCode}, compiler::Compiler, value::Value
+    chunk::{Chunk, OpCode},
+    compiler::Compiler,
+    value::Value,
 };
 
 const DEBUG_TRACE_EXECUTION: bool = true;
@@ -147,5 +149,11 @@ impl VM {
         self.push(op(a, b));
 
         Some(())
+    }
+}
+
+impl Default for VM {
+    fn default() -> Self {
+        Self::new()
     }
 }
