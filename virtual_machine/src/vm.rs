@@ -125,12 +125,15 @@ impl VM {
                     }
                 }
                 Ok(OpCode::OpDivide) => {
-                    if self.binary_op(|a, b| {
-                        if b == 0.0 {
-                            panic!("Runtime error: division by zero");
-                        }
-                        a / b
-                    }).is_none() {
+                    if self
+                        .binary_op(|a, b| {
+                            if b == 0.0 {
+                                panic!("Runtime error: division by zero");
+                            }
+                            a / b
+                        })
+                        .is_none()
+                    {
                         return InterpretResult::RuntimeError;
                     }
                 }
