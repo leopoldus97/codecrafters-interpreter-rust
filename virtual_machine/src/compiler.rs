@@ -313,13 +313,13 @@ pub enum Precedence {
     Primary,
 }
 
-pub struct Compiler<'a> {
+pub struct Compiler<'a, 'b> {
     scanner: Scanner<'a>,
     parser: Parser<'a>,
-    current_chunk: Option<&'a mut Chunk>,
+    current_chunk: Option<&'b mut Chunk>,
 }
 
-impl<'a> Compiler<'a> {
+impl<'a, 'b> Compiler<'a, 'b> {
     pub fn new(source: &'a str) -> Self {
         Self {
             scanner: Scanner::new(source),
@@ -328,7 +328,7 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn compile(&mut self, chunk: &'a mut Chunk) -> bool {
+    pub fn compile(&mut self, chunk: &'b mut Chunk) -> bool {
         self.current_chunk = Some(chunk);
 
         // Compilation logic goes here
@@ -446,7 +446,14 @@ impl<'a> Compiler<'a> {
     }
 
     fn number(&mut self) {
-        let value: f64 = self.parser.previous.start.parse().unwrap();
+        let value: f64 = match self.parser.previous.start.parse() {
+            Ok(num) => num,
+            Err(_) => {
+                self.parser.had_error = true;
+                self.error("Invalid number.");
+                return;
+            }
+        };
         self.emit_constant(value);
     }
 
@@ -500,7 +507,7 @@ impl<'a> Compiler<'a> {
         } else if matches!(token.token_type, TokenType::Error) {
             // Nothing.
         } else {
-            eprint!(" at '{}' -> {}", token.start, token.length);
+            eprint!(" at '{}' (length {})", token.start, token.length);
         }
 
         eprintln!(": {}", message);

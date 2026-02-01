@@ -55,6 +55,8 @@ impl VM {
 
         self.chunk = chunk;
         self.ip = 0;
+        self.stack.clear();
+        self.stack_top = 0;
 
         self.run()
     }
@@ -123,7 +125,12 @@ impl VM {
                     }
                 }
                 Ok(OpCode::OpDivide) => {
-                    if self.binary_op(|a, b| a / b).is_none() {
+                    if self.binary_op(|a, b| {
+                        if b == 0.0 {
+                            panic!("Runtime error: division by zero");
+                        }
+                        a / b
+                    }).is_none() {
                         return InterpretResult::RuntimeError;
                     }
                 }
