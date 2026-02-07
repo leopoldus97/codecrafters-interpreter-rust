@@ -390,7 +390,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
             TokenType::False => self.emit_byte(OpCode::OpFalse as u8),
             TokenType::Nil => self.emit_byte(OpCode::OpNil as u8),
             TokenType::True => self.emit_byte(OpCode::OpTrue as u8),
-            _ => unreachable!(),
+            _ => (), // Unreachable.
         }
     }
 
