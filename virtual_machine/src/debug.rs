@@ -34,6 +34,13 @@ impl Chunk {
             Ok(OpCode::OpDivide) => simple_instruction("OP_DIVIDE", offset),
             Ok(OpCode::OpNegate) => simple_instruction("OP_NEGATE", offset),
             Ok(OpCode::OpConstant) => self.constant_instruction("OP_CONSTANT", offset),
+            Ok(OpCode::OpNil) => simple_instruction("OP_NIL", offset),
+            Ok(OpCode::OpTrue) => simple_instruction("OP_TRUE", offset),
+            Ok(OpCode::OpFalse) => simple_instruction("OP_FALSE", offset),
+            Ok(OpCode::OpNot) => simple_instruction("OP_NOT", offset),
+            Ok(OpCode::OpEqual) => simple_instruction("OP_EQUAL", offset),
+            Ok(OpCode::OpGreater) => simple_instruction("OP_GREATER", offset),
+            Ok(OpCode::OpLess) => simple_instruction("OP_LESS", offset),
             Err(byte) => {
                 println!("Unknown opcode {byte}");
                 offset + 1
