@@ -1,6 +1,7 @@
 use crate::{
     chunk::{Chunk, OpCode},
     scanner::{Scanner, Token, TokenType},
+    value::Value,
 };
 
 const DEBUG_PRINT_CODE: bool = true;
@@ -169,8 +170,7 @@ pub const PARSE_RULES: &[ParseRule] = &[
     },
     // 25: False
     ParseRule {
-        prefix: None,
-        // prefix: Some(literal_prefix),
+        prefix: Some(literal_prefix),
         infix: None,
         precedence: Precedence::None,
     },
@@ -194,8 +194,7 @@ pub const PARSE_RULES: &[ParseRule] = &[
     },
     // 29: Nil
     ParseRule {
-        prefix: None,
-        // prefix: Some(literal_prefix),
+        prefix: Some(literal_prefix),
         infix: None,
         precedence: Precedence::None,
     },
@@ -231,8 +230,7 @@ pub const PARSE_RULES: &[ParseRule] = &[
     },
     // 35: True
     ParseRule {
-        prefix: None,
-        // prefix: Some(literal_prefix),
+        prefix: Some(literal_prefix),
         infix: None,
         precedence: Precedence::None,
     },
@@ -278,12 +276,12 @@ fn binary_infix(c: &mut Compiler, _can_assign: bool) {
     c.binary();
 }
 
+fn literal_prefix(c: &mut Compiler) {
+    c.literal();
+}
+
 // fn string_prefix<'a>(c: &mut Compiler<'a>) {
 //     c.string();
-// }
-
-// fn literal_prefix<'a>(c: &mut Compiler<'a>) {
-//     c.literal();
 // }
 
 // fn variable_prefix<'a>(c: &mut Compiler<'a>) {
@@ -375,15 +373,25 @@ impl<'a, 'b> Compiler<'a, 'b> {
 
     fn end_compiler(&mut self) {
         self.emit_return();
-        if DEBUG_PRINT_CODE && !self.parser.had_error {
-            if let Some(chunk) = &self.current_chunk {
-                chunk.disassemble("code");
-            }
+        if DEBUG_PRINT_CODE
+            && !self.parser.had_error
+            && let Some(chunk) = &self.current_chunk
+        {
+            chunk.disassemble("code");
         }
     }
 
     fn get_rule(&self, token_type: TokenType) -> &'static ParseRule {
         &PARSE_RULES[token_type as usize]
+    }
+
+    fn literal(&mut self) {
+        match self.parser.previous.token_type {
+            TokenType::False => self.emit_byte(OpCode::OpFalse as u8),
+            TokenType::Nil => self.emit_byte(OpCode::OpNil as u8),
+            TokenType::True => self.emit_byte(OpCode::OpTrue as u8),
+            _ => (), // Unreachable.
+        }
     }
 
     fn binary(&mut self) {
@@ -395,6 +403,12 @@ impl<'a, 'b> Compiler<'a, 'b> {
 
         // Emit the operator instruction.
         match operator_type {
+            TokenType::BangEqual => self.emit_bytes(OpCode::OpEqual as u8, OpCode::OpNot as u8),
+            TokenType::EqualEqual => self.emit_byte(OpCode::OpEqual as u8),
+            TokenType::Greater => self.emit_byte(OpCode::OpGreater as u8),
+            TokenType::GreaterEqual => self.emit_bytes(OpCode::OpLess as u8, OpCode::OpNot as u8),
+            TokenType::Less => self.emit_byte(OpCode::OpLess as u8),
+            TokenType::LessEqual => self.emit_bytes(OpCode::OpGreater as u8, OpCode::OpNot as u8),
             TokenType::Plus => self.emit_byte(OpCode::OpAdd as u8),
             TokenType::Minus => self.emit_byte(OpCode::OpSubtract as u8),
             TokenType::Star => self.emit_byte(OpCode::OpMultiply as u8),
@@ -410,13 +424,10 @@ impl<'a, 'b> Compiler<'a, 'b> {
         self.parse_precedence(Precedence::Unary as u8);
 
         // Emit the operator instruction.
-        // match operator_type {
-        //     TokenType::Minus => self.emit_byte(OpCode::OpNegate as u8),
-        //     TokenType::Bang => self.emit_byte(OpCode::OpNot as u8),
-        //     _ => (), // Unreachable.
-        // }
-        if operator_type == TokenType::Minus {
-            self.emit_byte(OpCode::OpNegate as u8);
+        match operator_type {
+            TokenType::Bang => self.emit_byte(OpCode::OpNot as u8),
+            TokenType::Minus => self.emit_byte(OpCode::OpNegate as u8),
+            _ => (), // Unreachable.
         }
     }
 
@@ -454,7 +465,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
                 return;
             }
         };
-        self.emit_constant(value);
+        self.emit_constant(Value::Number(value));
     }
 
     fn expression(&mut self) {
@@ -465,7 +476,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
         self.emit_byte(OpCode::OpReturn as u8);
     }
 
-    fn make_constant(&mut self, value: f64) -> u8 {
+    fn make_constant(&mut self, value: Value) -> u8 {
         if let Some(chunk) = &mut self.current_chunk {
             let constant = chunk.add_constant(value);
             if constant > u8::MAX as usize {
@@ -478,7 +489,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
         }
     }
 
-    fn emit_constant(&mut self, value: f64) {
+    fn emit_constant(&mut self, value: Value) {
         let constant = self.make_constant(value);
         self.emit_bytes(OpCode::OpConstant as u8, constant);
     }

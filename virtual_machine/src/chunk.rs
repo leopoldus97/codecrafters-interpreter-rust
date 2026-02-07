@@ -10,6 +10,13 @@ pub enum OpCode {
     OpSubtract = 4,
     OpMultiply = 5,
     OpDivide = 6,
+    OpNil = 7,
+    OpTrue = 8,
+    OpFalse = 9,
+    OpNot = 10,
+    OpEqual = 11,
+    OpGreater = 12,
+    OpLess = 13,
 }
 
 impl TryFrom<u8> for OpCode {
@@ -24,6 +31,13 @@ impl TryFrom<u8> for OpCode {
             4 => Ok(OpCode::OpSubtract),
             5 => Ok(OpCode::OpMultiply),
             6 => Ok(OpCode::OpDivide),
+            7 => Ok(OpCode::OpNil),
+            8 => Ok(OpCode::OpTrue),
+            9 => Ok(OpCode::OpFalse),
+            10 => Ok(OpCode::OpNot),
+            11 => Ok(OpCode::OpEqual),
+            12 => Ok(OpCode::OpGreater),
+            13 => Ok(OpCode::OpLess),
             _ => Err(value),
         }
     }
@@ -60,7 +74,7 @@ impl Chunk {
     }
 
     pub fn read_constant(&self, index: u8) -> Option<Value> {
-        self.constants.get(index as usize)
+        self.constants.get(index as usize).cloned()
     }
 
     pub fn len(&self) -> usize {

@@ -97,7 +97,7 @@ impl<'a> Scanner<'a> {
 
         let c = self.advance();
 
-        let token = match c {
+        match c {
             '(' => self.make_token(TokenType::LeftParen),
             ')' => self.make_token(TokenType::RightParen),
             '{' => self.make_token(TokenType::LeftBrace),
@@ -145,9 +145,7 @@ impl<'a> Scanner<'a> {
             '0'..='9' => self.number(),
             'a'..='z' | 'A'..='Z' | '_' => self.identifier(),
             _ => self.error_token("Unexpected character."),
-        };
-
-        token
+        }
     }
 
     fn skip_whitespace(&mut self) {
