@@ -125,13 +125,11 @@ impl VM {
                     self.push(constant);
                 }
                 Ok(OpCode::OpNegate) => {
-                    if let Some(Value::Number(_)) = self.peek(0) {
-                        match self.pop() {
-                            Some(value) => self.push(-value),
-                            _ => {
-                                runtime_error!(self, "Operand must be a number.");
-                                return InterpretResult::RuntimeError;
-                            }
+                    match self.pop() {
+                        Some(value) => self.push(-value),
+                        _ => {
+                            runtime_error!(self, "Operand must be a number.");
+                            return InterpretResult::RuntimeError;
                         }
                     }
                 }
