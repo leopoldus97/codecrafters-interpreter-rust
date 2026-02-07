@@ -22,4 +22,4 @@ edition = "2021"
 anyhow = "1.0.68"                                # error handling
 bytes = "1.11.1"                                  # helps manage buffers
 regex = "1.10.5"
-thiserror = "1.0.38"                             # error handling
+thiserror = "2.0.18"                             # error handling
