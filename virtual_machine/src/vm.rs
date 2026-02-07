@@ -7,7 +7,6 @@ use crate::{
 const DEBUG_TRACE_EXECUTION: bool = true;
 const STACK_MAX: usize = 256;
 
-#[macro_export]
 macro_rules! runtime_error {
     ($vm:expr, $($arg:tt)*) => {{
         // First line: message
@@ -18,7 +17,7 @@ macro_rules! runtime_error {
         let line = $vm.chunk.line(instruction);
         eprintln!("[line {}] in script", line);
 
-        $vm.stack_top = 0;
+        $vm.reset_stack();
     }};
 }
 
@@ -124,13 +123,16 @@ impl VM {
                     };
                     self.push(constant);
                 }
-                Ok(OpCode::OpNegate) => match self.pop() {
-                    Some(value) => self.push(-value),
-                    _ => {
+                Ok(OpCode::OpNegate) => {
+                    if let Some(value) = self.pop()
+                        && let Some(value_neg) = -value
+                    {
+                        self.push(value_neg);
+                    } else {
                         runtime_error!(self, "Operand must be a number.");
                         return InterpretResult::RuntimeError;
                     }
-                },
+                }
                 Ok(OpCode::OpAdd) => {
                     if self.binary_op(|a, b| a + b).is_none() {
                         runtime_error!(self, "Operands must be numbers.");
@@ -174,19 +176,19 @@ impl VM {
                     }
                 },
                 Ok(OpCode::OpEqual) => {
-                    if self.binary_op(|a, b| Value::Bool(a == b)).is_none() {
+                    if self.binary_op(|a, b| Some((a == b).into())).is_none() {
                         runtime_error!(self, "Equal operand is not supported for this type.");
                         return InterpretResult::RuntimeError;
                     }
                 }
                 Ok(OpCode::OpGreater) => {
-                    if self.binary_op(|a, b| Value::Bool(a > b)).is_none() {
+                    if self.binary_op(|a, b| Some((a > b).into())).is_none() {
                         runtime_error!(self, "Greater operand is not supported for this type.");
                         return InterpretResult::RuntimeError;
                     }
                 }
                 Ok(OpCode::OpLess) => {
-                    if self.binary_op(|a, b| Value::Bool(a < b)).is_none() {
+                    if self.binary_op(|a, b| Some((a < b).into())).is_none() {
                         runtime_error!(self, "Less operand is not supported for this type.");
                         return InterpretResult::RuntimeError;
                     }
@@ -198,13 +200,18 @@ impl VM {
 
     fn binary_op<F>(&mut self, op: F) -> Option<()>
     where
-        F: Fn(Value, Value) -> Value,
+        F: Fn(Value, Value) -> Option<Value>,
     {
         let b = self.pop()?;
         let a = self.pop()?;
-        self.push(op(a, b));
+        self.push(op(a, b)?);
 
         Some(())
+    }
+
+    fn reset_stack(&mut self) {
+        self.stack.clear();
+        self.stack_top = 0;
     }
 }
 

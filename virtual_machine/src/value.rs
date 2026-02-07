@@ -36,57 +36,13 @@ impl Display for Value {
     }
 }
 
-impl Add for Value {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (Value::Number(a), Value::Number(b)) => Value::Number(a + b),
-            _ => panic!("Invalid operands for addition"),
-        }
-    }
-}
-
-impl Sub for Value {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (Value::Number(a), Value::Number(b)) => Value::Number(a - b),
-            _ => panic!("Invalid operands for subtraction"),
-        }
-    }
-}
-
-impl Mul for Value {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (Value::Number(a), Value::Number(b)) => Value::Number(a * b),
-            _ => panic!("Invalid operands for multiplication"),
-        }
-    }
-}
-
-impl Div for Value {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (Value::Number(a), Value::Number(b)) => Value::Number(a / b),
-            _ => panic!("Invalid operands for division"),
-        }
-    }
-}
-
 impl Neg for Value {
-    type Output = Self;
+    type Output = Option<Self>;
 
     fn neg(self) -> Self::Output {
         match self {
-            Value::Number(n) => Value::Number(-n),
-            _ => panic!("Invalid operand for negation"),
+            Value::Number(n) => Some(Value::Number(-n)),
+            _ => None,
         }
     }
 }
@@ -98,8 +54,52 @@ impl Not for Value {
         match self {
             Value::Bool(b) => Value::Bool(!b),
             Value::Nil => Value::Bool(true),
-            Value::Number(0.0) => Value::Bool(true),
+            // Value::Number(0.0) => Value::Bool(true),
             _ => Value::Bool(false),
+        }
+    }
+}
+
+impl Add for Value {
+    type Output = Option<Self>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => Some(Value::Number(a + b)),
+            _ => None,
+        }
+    }
+}
+
+impl Sub for Value {
+    type Output = Option<Self>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => Some(Value::Number(a - b)),
+            _ => None,
+        }
+    }
+}
+
+impl Mul for Value {
+    type Output = Option<Self>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => Some(Value::Number(a * b)),
+            _ => None,
+        }
+    }
+}
+
+impl Div for Value {
+    type Output = Option<Self>;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Number(a), Value::Number(b)) => Some(Value::Number(a / b)),
+            _ => None,
         }
     }
 }
@@ -121,6 +121,12 @@ impl PartialOrd for Value {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
             _ => None,
         }
+    }
+}
+
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        Value::Bool(value)
     }
 }
 
