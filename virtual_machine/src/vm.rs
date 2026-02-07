@@ -7,7 +7,6 @@ use crate::{
 const DEBUG_TRACE_EXECUTION: bool = true;
 const STACK_MAX: usize = 256;
 
-#[macro_export]
 macro_rules! runtime_error {
     ($vm:expr, $($arg:tt)*) => {{
         // First line: message
