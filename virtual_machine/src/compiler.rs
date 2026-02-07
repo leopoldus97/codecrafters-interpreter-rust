@@ -276,7 +276,7 @@ fn binary_infix(c: &mut Compiler, _can_assign: bool) {
     c.binary();
 }
 
-fn literal_prefix<'a>(c: &mut Compiler) {
+fn literal_prefix(c: &mut Compiler) {
     c.literal();
 }
 
@@ -373,10 +373,11 @@ impl<'a, 'b> Compiler<'a, 'b> {
 
     fn end_compiler(&mut self) {
         self.emit_return();
-        if DEBUG_PRINT_CODE && !self.parser.had_error {
-            if let Some(chunk) = &self.current_chunk {
-                chunk.disassemble("code");
-            }
+        if DEBUG_PRINT_CODE
+            && !self.parser.had_error
+            && let Some(chunk) = &self.current_chunk
+        {
+            chunk.disassemble("code");
         }
     }
 
