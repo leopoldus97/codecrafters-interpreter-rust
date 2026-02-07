@@ -1,6 +1,7 @@
 use crate::{
     chunk::{Chunk, OpCode},
-    scanner::{Scanner, Token, TokenType}, value::Value,
+    scanner::{Scanner, Token, TokenType},
+    value::Value,
 };
 
 const DEBUG_PRINT_CODE: bool = true;
@@ -382,7 +383,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
     fn get_rule(&self, token_type: TokenType) -> &'static ParseRule {
         &PARSE_RULES[token_type as usize]
     }
-    
+
     fn literal(&mut self) {
         match self.parser.previous.token_type {
             TokenType::False => self.emit_byte(OpCode::OpFalse as u8),

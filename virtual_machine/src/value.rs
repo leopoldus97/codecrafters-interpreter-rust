@@ -1,4 +1,7 @@
-use std::{fmt::{self, Display}, ops::{Add, Div, Mul, Neg, Not, Sub}};
+use std::{
+    fmt::{self, Display},
+    ops::{Add, Div, Mul, Neg, Not, Sub},
+};
 
 pub enum ValueType {
     Bool,
@@ -10,7 +13,7 @@ pub enum ValueType {
 pub enum Value {
     Bool(bool),
     Nil,
-    Number(f64),    
+    Number(f64),
 }
 
 impl Value {
@@ -52,7 +55,7 @@ impl Sub for Value {
             (Value::Number(a), Value::Number(b)) => Value::Number(a - b),
             _ => panic!("Invalid operands for subtraction"),
         }
-    }    
+    }
 }
 
 impl Mul for Value {
@@ -63,7 +66,7 @@ impl Mul for Value {
             (Value::Number(a), Value::Number(b)) => Value::Number(a * b),
             _ => panic!("Invalid operands for multiplication"),
         }
-    }    
+    }
 }
 
 impl Div for Value {
@@ -85,7 +88,7 @@ impl Neg for Value {
             Value::Number(n) => Value::Number(-n),
             _ => panic!("Invalid operand for negation"),
         }
-    }    
+    }
 }
 
 impl Not for Value {
@@ -109,7 +112,7 @@ impl PartialEq for Value {
             (Value::Number(a), Value::Number(b)) => a == b,
             _ => false,
         }
-    }    
+    }
 }
 
 impl PartialOrd for Value {
@@ -118,7 +121,7 @@ impl PartialOrd for Value {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
             _ => None,
         }
-    }    
+    }
 }
 
 #[derive(Default)]
