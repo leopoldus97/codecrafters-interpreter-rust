@@ -1,6 +1,7 @@
 use std::{
     fmt::{self, Display},
     ops::{Add, Div, Mul, Neg, Not, Sub},
+    rc::Rc,
 };
 
 use crate::object::Object;
@@ -27,7 +28,7 @@ pub enum Value {
     Bool(bool),
     Nil,
     Number(f64),
-    Object(Object),
+    Object(Rc<Object>),
 }
 
 impl Value {
@@ -58,7 +59,7 @@ impl Clone for Value {
             Self::Bool(b) => Self::Bool(*b),
             Self::Nil => Self::Nil,
             Self::Number(n) => Self::Number(*n),
-            Self::Object(o) => Self::Object(o.clone()),
+            Self::Object(o) => Self::Object(Rc::clone(o)),
         }
     }
 }
@@ -93,7 +94,12 @@ impl Add for Value {
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => Some(Value::Number(a + b)),
-            (Value::Object(a), Value::Object(b)) => (a + b).map(Value::Object),
+            (Value::Object(a), Value::Object(b)) => {
+                // Clone the Rc contents to perform the addition
+                let a_owned = (*a).clone();
+                let b_owned = (*b).clone();
+                (a_owned + b_owned).map(|o| Value::Object(Rc::new(o)))
+            }
             _ => None,
         }
     }

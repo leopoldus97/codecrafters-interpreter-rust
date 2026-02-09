@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     chunk::{Chunk, OpCode},
     object::Object,
@@ -387,7 +389,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
 
     fn string(&mut self) {
         let str_obj = &self.parser.previous.start[1..self.parser.previous.length - 1];
-        let value = Value::Object(Object::from(str_obj));
+        let value = Value::Object(Rc::new(Object::from(str_obj)));
         self.emit_constant(value);
     }
 

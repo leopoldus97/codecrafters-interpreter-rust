@@ -1,6 +1,5 @@
 use std::{fmt::Display, ops::Add};
 
-// type Object = Rc<RefCell<dyn Any>>;
 #[derive(Clone)]
 pub enum Object {
     String(String),
