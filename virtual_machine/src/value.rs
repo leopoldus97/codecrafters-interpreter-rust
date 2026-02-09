@@ -3,17 +3,31 @@ use std::{
     ops::{Add, Div, Mul, Neg, Not, Sub},
 };
 
+use crate::object::Object;
+
 pub enum ValueType {
     Bool,
     Nil,
     Number,
+    Object,
 }
 
-#[derive(Clone, Copy)]
+impl Display for ValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ValueType::Bool => write!(f, "bool"),
+            ValueType::Nil => write!(f, "nil"),
+            ValueType::Number => write!(f, "number"),
+            ValueType::Object => write!(f, "object"),
+        }
+    }
+}
+
 pub enum Value {
     Bool(bool),
     Nil,
     Number(f64),
+    Object(Object),
 }
 
 impl Value {
@@ -22,6 +36,7 @@ impl Value {
             Value::Bool(_) => ValueType::Bool,
             Value::Nil => ValueType::Nil,
             Value::Number(_) => ValueType::Number,
+            Value::Object(_) => ValueType::Object,
         }
     }
 }
@@ -32,6 +47,18 @@ impl Display for Value {
             Value::Bool(b) => write!(f, "{}", b),
             Value::Nil => write!(f, "nil"),
             Value::Number(n) => write!(f, "{}", n),
+            Value::Object(o) => write!(f, "{}", o),
+        }
+    }
+}
+
+impl Clone for Value {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Bool(b) => Self::Bool(*b),
+            Self::Nil => Self::Nil,
+            Self::Number(n) => Self::Number(*n),
+            Self::Object(o) => Self::Object(o.clone()),
         }
     }
 }
@@ -66,6 +93,7 @@ impl Add for Value {
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => Some(Value::Number(a + b)),
+            (Value::Object(a), Value::Object(b)) => (a + b).map(|r| Value::Object(r)),
             _ => None,
         }
     }
@@ -110,6 +138,7 @@ impl PartialEq for Value {
             (Value::Bool(a), Value::Bool(b)) => a == b,
             (Value::Nil, Value::Nil) => true,
             (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => a == b,
             _ => false,
         }
     }
