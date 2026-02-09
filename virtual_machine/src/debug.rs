@@ -1,0 +1,69 @@
+use crate::chunk::{Chunk, OpCode};
+
+impl Chunk {
+    pub fn disassemble(&self, name: &str) {
+        println!("== {name} ==");
+
+        let mut offset = 0;
+        while offset < self.len() {
+            offset = self.disassemble_instruction(offset);
+        }
+    }
+
+    pub fn disassemble_instruction(&self, offset: usize) -> usize {
+        print!("{offset:04} ");
+
+        if offset > 0 && self.line(offset) == self.line(offset - 1) {
+            print!("   | ");
+        } else {
+            print!("{:4} ", self.line(offset));
+        }
+
+        let instruction = self.code().get(offset);
+
+        if instruction.is_none() {
+            println!("Error: No instruction at offset {offset}");
+            return offset + 1;
+        }
+
+        match OpCode::try_from(*instruction.unwrap()) {
+            Ok(OpCode::OpReturn) => simple_instruction("OP_RETURN", offset),
+            Ok(OpCode::OpAdd) => simple_instruction("OP_ADD", offset),
+            Ok(OpCode::OpSubtract) => simple_instruction("OP_SUBTRACT", offset),
+            Ok(OpCode::OpMultiply) => simple_instruction("OP_MULTIPLY", offset),
+            Ok(OpCode::OpDivide) => simple_instruction("OP_DIVIDE", offset),
+            Ok(OpCode::OpNegate) => simple_instruction("OP_NEGATE", offset),
+            Ok(OpCode::OpConstant) => self.constant_instruction("OP_CONSTANT", offset),
+            Ok(OpCode::OpNil) => simple_instruction("OP_NIL", offset),
+            Ok(OpCode::OpTrue) => simple_instruction("OP_TRUE", offset),
+            Ok(OpCode::OpFalse) => simple_instruction("OP_FALSE", offset),
+            Ok(OpCode::OpNot) => simple_instruction("OP_NOT", offset),
+            Ok(OpCode::OpEqual) => simple_instruction("OP_EQUAL", offset),
+            Ok(OpCode::OpGreater) => simple_instruction("OP_GREATER", offset),
+            Ok(OpCode::OpLess) => simple_instruction("OP_LESS", offset),
+            Err(byte) => {
+                println!("Unknown opcode {byte}");
+                offset + 1
+            }
+        }
+    }
+
+    fn constant_instruction(&self, name: &str, offset: usize) -> usize {
+        if self.code().len() <= offset + 1 {
+            println!("Error: Incomplete constant instruction at offset {offset}");
+            return offset + 1;
+        }
+
+        let constant_idx = self.code()[offset + 1];
+        let value = self
+            .read_constant(constant_idx)
+            .expect("Invalid constant index");
+        println!("{name} {constant_idx:4} '{value}'");
+        offset + 2
+    }
+}
+
+fn simple_instruction(name: &str, offset: usize) -> usize {
+    println!("{name}");
+    offset + 1
+}

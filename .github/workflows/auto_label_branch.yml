@@ -1,0 +1,54 @@
+name: Auto Label PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get branch name
+        id: vars
+        run: echo "branch_name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+
+      - name: Determine label
+        id: label
+        run: |
+          branch_name=${{ steps.vars.outputs.branch_name }}
+          echo "Branch name: $branch_name"
+          if [[ "$branch_name" == feature/* ]]; then
+            label="chapter"
+          elif [[ "$branch_name" == bugfix/* ]]; then
+            label="bug"
+          elif [[ "$branch_name" == chore/* ]]; then
+            label="chore"
+          else
+            label=""
+          fi
+          echo "label=$label" >> $GITHUB_OUTPUT
+
+      - name: Add label to PR
+        if: steps.label.outputs.label != 'other' && steps.label.outputs.label != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          label_name=${{ steps.label.outputs.label }}
+          echo "Adding label '$label_name' to PR"
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels \
+            -d "{\"labels\":[\"$label_name\"]}"

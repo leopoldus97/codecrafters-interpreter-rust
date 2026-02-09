@@ -1,1 +1,3 @@
 * text=auto
+*/pre-commit text eol=lf
+*/pre-push text eol=lf
