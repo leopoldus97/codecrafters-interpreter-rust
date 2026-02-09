@@ -1,5 +1,8 @@
 use crate::{
-    chunk::{Chunk, OpCode}, object::Object, scanner::{Scanner, Token, TokenType}, value::Value
+    chunk::{Chunk, OpCode},
+    object::Object,
+    scanner::{Scanner, Token, TokenType},
+    value::Value,
 };
 
 const DEBUG_PRINT_CODE: bool = true;
@@ -381,7 +384,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
     fn get_rule(&self, token_type: TokenType) -> &'static ParseRule {
         &PARSE_RULES[token_type as usize]
     }
-    
+
     fn string(&mut self) {
         let str_obj = &self.parser.previous.start[1..self.parser.previous.length - 1];
         let value = Value::Object(Object::from(str_obj));

@@ -11,7 +11,7 @@ impl Display for Object {
         match self {
             Object::String(s) => write!(f, "{}", s),
         }
-    }    
+    }
 }
 
 impl Add for Object {
