@@ -93,7 +93,7 @@ impl Add for Value {
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
             (Value::Number(a), Value::Number(b)) => Some(Value::Number(a + b)),
-            (Value::Object(a), Value::Object(b)) => (a + b).map(|r| Value::Object(r)),
+            (Value::Object(a), Value::Object(b)) => (a + b).map(Value::Object),
             _ => None,
         }
     }
