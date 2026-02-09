@@ -134,8 +134,12 @@ impl VM {
                     }
                 }
                 Ok(OpCode::OpAdd) => {
+                    let value_type = self.peek(0).map(|r| r.value_type());
                     if self.binary_op(|a, b| a + b).is_none() {
-                        runtime_error!(self, "Operands must be numbers.");
+                        match value_type {
+                            Some(v) => runtime_error!(self, "Operands must be {v}s."),
+                            None => runtime_error!(self, "Missing value."),
+                        }
                         return InterpretResult::RuntimeError;
                     }
                 }
