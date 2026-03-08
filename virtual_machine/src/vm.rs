@@ -258,7 +258,7 @@ impl VM {
 
                     let entry = self.table_set(&name, value.to_owned());
 
-                    if entry.is_some() {
+                    if entry.is_none() {
                         self.table_delete(&name);
                         runtime_error!(self, "Undefined variable '{name}'.");
                         return InterpretResult::RuntimeError;
