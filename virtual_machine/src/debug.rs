@@ -41,6 +41,11 @@ impl Chunk {
             Ok(OpCode::OpEqual) => simple_instruction("OP_EQUAL", offset),
             Ok(OpCode::OpGreater) => simple_instruction("OP_GREATER", offset),
             Ok(OpCode::OpLess) => simple_instruction("OP_LESS", offset),
+            Ok(OpCode::OpPrint) => simple_instruction("OP_PRINT", offset),
+            Ok(OpCode::OpPop) => simple_instruction("OP_POP", offset),
+            Ok(OpCode::OpDefineGlobal) => self.constant_instruction("OP_DEFINE_GLOBAL", offset),
+            Ok(OpCode::OpGetGlobal) => self.constant_instruction("OP_GET_GLOBAL", offset),
+            Ok(OpCode::OpSetGlobal) => self.constant_instruction("OP_SET_GLOBAL", offset),
             Err(byte) => {
                 println!("Unknown opcode {byte}");
                 offset + 1

@@ -17,6 +17,11 @@ pub enum OpCode {
     OpEqual = 11,
     OpGreater = 12,
     OpLess = 13,
+    OpPrint = 14,
+    OpPop = 15,
+    OpDefineGlobal = 16,
+    OpGetGlobal = 17,
+    OpSetGlobal = 18,
 }
 
 impl TryFrom<u8> for OpCode {
@@ -38,6 +43,11 @@ impl TryFrom<u8> for OpCode {
             11 => Ok(OpCode::OpEqual),
             12 => Ok(OpCode::OpGreater),
             13 => Ok(OpCode::OpLess),
+            14 => Ok(OpCode::OpPrint),
+            15 => Ok(OpCode::OpPop),
+            16 => Ok(OpCode::OpDefineGlobal),
+            17 => Ok(OpCode::OpGetGlobal),
+            18 => Ok(OpCode::OpSetGlobal),
             _ => Err(value),
         }
     }

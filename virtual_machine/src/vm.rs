@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     chunk::{Chunk, OpCode},
     compiler::Compiler,
@@ -33,6 +35,7 @@ pub struct VM {
     ip: usize,
     stack: Vec<Value>,
     stack_top: usize,
+    globals: HashMap<String, Value>,
 }
 
 impl VM {
@@ -42,6 +45,7 @@ impl VM {
             ip: 0,
             stack: Vec::with_capacity(STACK_MAX),
             stack_top: 0,
+            globals: HashMap::new(),
         }
     }
 
@@ -56,6 +60,12 @@ impl VM {
     fn read_constant(&mut self) -> Option<Value> {
         let index = self.read_byte()?;
         self.chunk.read_constant(index)
+    }
+
+    #[inline]
+    fn read_string(&mut self) -> Option<String> {
+        let constant = self.read_constant()?;
+        Some(constant.to_string())
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
@@ -96,6 +106,18 @@ impl VM {
             return None;
         }
         self.stack.get(self.stack_top - 1 - distance)
+    }
+
+    fn table_set(&mut self, name: &str, value: Value) -> Option<Value> {
+        self.globals.insert(name.to_string(), value)
+    }
+
+    fn table_get(&mut self, name: &str) -> Option<Value> {
+        self.globals.get(name).cloned()
+    }
+
+    fn table_delete(&mut self, name: &str) {
+        self.globals.remove(name);
     }
 
     fn run(&mut self) -> InterpretResult {
@@ -162,11 +184,10 @@ impl VM {
                     }
                 }
                 Ok(OpCode::OpReturn) => {
-                    let value = match self.pop() {
-                        Some(value) => value,
-                        None => return InterpretResult::RuntimeError,
-                    };
-                    println!("{}", value);
+                    // let value = match self.pop() {
+                    //     Some(value) => value,
+                    //     None => return InterpretResult::RuntimeError,
+                    // };
                     return InterpretResult::Ok;
                 }
                 Ok(OpCode::OpNil) => self.push(Value::Nil),
@@ -194,6 +215,52 @@ impl VM {
                 Ok(OpCode::OpLess) => {
                     if self.binary_op(|a, b| Some((a < b).into())).is_none() {
                         runtime_error!(self, "Less operand is not supported for this type.");
+                        return InterpretResult::RuntimeError;
+                    }
+                }
+                Ok(OpCode::OpPrint) => {
+                    if let Some(value) = self.pop() {
+                        println!("{value}");
+                    }
+                }
+                Ok(OpCode::OpPop) => {
+                    self.pop();
+                }
+                Ok(OpCode::OpDefineGlobal) => {
+                    let name = self
+                        .read_string()
+                        .expect("Missing global variable name at definition.");
+                    let value = self.peek(0);
+
+                    if let Some(value) = value {
+                        self.table_set(&name, value.to_owned());
+                        self.pop();
+                    } else {
+                        runtime_error!(self, "Missing global variable value.");
+                        return InterpretResult::RuntimeError;
+                    }
+                }
+                Ok(OpCode::OpGetGlobal) => {
+                    let name = self.read_string().expect("Missing global variable name.");
+                    let entry = self.table_get(&name);
+
+                    match entry {
+                        Some(value) => self.push(value),
+                        None => {
+                            runtime_error!(self, "Undefined variable '{name}'.");
+                            return InterpretResult::RuntimeError;
+                        }
+                    }
+                }
+                Ok(OpCode::OpSetGlobal) => {
+                    let name = self.read_string().expect("Missing global variable name.");
+                    let value = self.peek(0).expect("");
+
+                    let entry = self.table_set(&name, value.to_owned());
+
+                    if entry.is_some() {
+                        self.table_delete(&name);
+                        runtime_error!(self, "Undefined variable '{name}'.");
                         return InterpretResult::RuntimeError;
                     }
                 }
