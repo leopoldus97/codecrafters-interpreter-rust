@@ -112,7 +112,7 @@ impl VM {
         self.globals.insert(name.to_string(), value)
     }
 
-    fn table_get(&mut self, name: &str) -> Option<Value> {
+    fn table_get(&self, name: &str) -> Option<Value> {
         self.globals.get(name).cloned()
     }
 
@@ -184,10 +184,6 @@ impl VM {
                     }
                 }
                 Ok(OpCode::OpReturn) => {
-                    // let value = match self.pop() {
-                    //     Some(value) => value,
-                    //     None => return InterpretResult::RuntimeError,
-                    // };
                     return InterpretResult::Ok;
                 }
                 Ok(OpCode::OpNil) => self.push(Value::Nil),
@@ -218,11 +214,13 @@ impl VM {
                         return InterpretResult::RuntimeError;
                     }
                 }
-                Ok(OpCode::OpPrint) => {
-                    if let Some(value) = self.pop() {
-                        println!("{value}");
+                Ok(OpCode::OpPrint) => match self.pop() {
+                    Some(value) => println!("{value}"),
+                    None => {
+                        runtime_error!(self, "Missing value to print.");
+                        return InterpretResult::RuntimeError;
                     }
-                }
+                },
                 Ok(OpCode::OpPop) => {
                     self.pop();
                 }
@@ -254,9 +252,12 @@ impl VM {
                 }
                 Ok(OpCode::OpSetGlobal) => {
                     let name = self.read_string().expect("Missing global variable name.");
-                    let value = self.peek(0).expect("");
+                    let value = self.peek(0);
 
-                    let entry = self.table_set(&name, value.to_owned());
+                    let entry = match value {
+                        Some(value) => self.table_set(&name, value.to_owned()),
+                        None => None,
+                    };
 
                     if entry.is_none() {
                         self.table_delete(&name);

@@ -373,7 +373,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
         true
     }
 
-    fn check(&mut self, token_type: TokenType) -> bool {
+    fn check(&self, token_type: TokenType) -> bool {
         self.parser.current.token_type == token_type
     }
 
