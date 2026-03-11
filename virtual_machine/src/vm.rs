@@ -7,6 +7,7 @@ use crate::{
 };
 
 const DEBUG_TRACE_EXECUTION: bool = true;
+
 const STACK_MAX: usize = 256;
 
 macro_rules! runtime_error {
